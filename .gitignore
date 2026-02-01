@@ -1,0 +1,8 @@
+# Temporary files
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# Optional: ignore old versions
+*.old

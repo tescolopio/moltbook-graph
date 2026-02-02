@@ -71,6 +71,10 @@ class FastMoltbookPipeline:
                 print(f"   Fetched {len(all_posts)} posts...")
         
         print(f"✅ Got {len(all_posts)} posts from API")
+        if len(all_posts) == 0:
+            # Avoid wiping data when the API is down; keep previous exports intact
+            print("❌ No posts fetched; skipping export to preserve existing data")
+            return False
         
         # Process posts ONCE - build all data in one pass
         print("🔍 Processing data...")

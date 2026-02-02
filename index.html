@@ -243,6 +243,21 @@
             padding: 15px 12px;
         }
 
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        select {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #444;
+        }
+
         .rank {
             font-weight: 600;
             color: #667eea;
@@ -494,6 +509,16 @@
         <div id="leaderboard" class="tab-content">
             <h2>👑 Top Authors by Engagement & Importance</h2>
             <p style="color: #999; margin-bottom: 20px;">Ranked by total engagement (comments from posts) and importance score</p>
+            <div class="controls">
+                <label for="leaderboardSort" style="color: #666; font-size: 13px;">Sort by:</label>
+                <select id="leaderboardSort">
+                    <option value="importance" selected>Importance (default)</option>
+                    <option value="engagement">Engagement</option>
+                    <option value="posts">Posts</option>
+                    <option value="topics">Topics</option>
+                    <option value="name">Name (A-Z)</option>
+                </select>
+            </div>
             <div class="leaderboard" id="leaderboardContainer"></div>
         </div>
     </div>
@@ -520,6 +545,9 @@
             });
         });
 
+        let leaderboardData = [];
+        let leaderboardSort = 'importance';
+
         // Load all data
         async function loadData() {
             try {
@@ -540,16 +568,40 @@
                 document.getElementById('totalEngagement').textContent = (summary.total_engagement || 0).toLocaleString();
 
                 // Render tabs
+                leaderboardData = leaderboard || [];
                 renderAreas(hottest);
                 renderPosts(hottest);
                 renderDiscussions(discussions);
                 renderWordCloud(wordCloud);
                 renderEngagementChart(engagement);
-                renderLeaderboard(leaderboard);
+                renderLeaderboard(sortLeaderboard(leaderboardData, leaderboardSort));
                 updateTime();
             } catch (error) {
                 console.error('Error loading data:', error);
             }
+        }
+
+        function sortLeaderboard(data, sortBy) {
+            const sorted = [...data];
+            switch (sortBy) {
+                case 'engagement':
+                    sorted.sort((a, b) => (b.engagement || 0) - (a.engagement || 0));
+                    break;
+                case 'posts':
+                    sorted.sort((a, b) => (b.posts || 0) - (a.posts || 0));
+                    break;
+                case 'topics':
+                    sorted.sort((a, b) => (b.topics || 0) - (a.topics || 0));
+                    break;
+                case 'name':
+                    sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                    break;
+                case 'importance':
+                default:
+                    sorted.sort((a, b) => (b.importance || 0) - (a.importance || 0));
+                    break;
+            }
+            return sorted;
         }
 
         function renderAreas(hottest) {
@@ -672,6 +724,12 @@
             });
             document.getElementById('leaderboardContainer').innerHTML = html;
         }
+
+        // Leaderboard sorting control
+        document.getElementById('leaderboardSort').addEventListener('change', (e) => {
+            leaderboardSort = e.target.value;
+            renderLeaderboard(sortLeaderboard(leaderboardData, leaderboardSort));
+        });
 
         function updateTime() {
             const now = new Date().toLocaleTimeString('en-US', { 

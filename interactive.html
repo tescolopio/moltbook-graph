@@ -163,12 +163,23 @@
         }
         
         #network {
-            background: var(--bg-card);
-            border-radius: 12px;
+            background: radial-gradient(circle at 20% 20%, rgba(255,107,61,0.06), transparent 35%),
+                        radial-gradient(circle at 80% 30%, rgba(14,241,193,0.08), transparent 32%),
+                        var(--bg-card);
+            border-radius: 16px;
             border: 1px solid var(--border);
             width: 100%;
             height: 700px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
         }
+
+        .network-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .network-detail, .network-legend { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; line-height: 1.6; }
+        .network-detail h3, .network-legend h3 { margin-bottom: 0.35rem; color: var(--text-primary); font-size: 1rem; }
+        .network-detail p, .network-legend p { color: var(--text-secondary); font-size: 0.9rem; }
+        .neighbor { display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.9rem; }
+        .neighbor span { color: var(--text-primary); font-weight: 600; }
+        .node-label { fill: var(--text-primary); font-size: 10px; font-weight: 700; stroke: rgba(11,16,33,0.7); stroke-width: 2; paint-order: stroke; pointer-events: none; }
         
         #tooltip {
             position: absolute;
@@ -492,6 +503,16 @@
             
             <svg id="network"></svg>
             <div id="tooltip"></div>
+            <div class="network-meta">
+                <div class="network-detail" id="nodeDetail">
+                    <h3>Node details</h3>
+                    <p>Click a node to see engagement, topics, and its top neighbors.</p>
+                </div>
+                <div class="network-legend">
+                    <h3>Legend</h3>
+                    <p>Size: engagement/topics/importance (toggle in controls). Color: importance gradient. Click to highlight ego network; drag to reposition; scroll to zoom.</p>
+                </div>
+            </div>
             
             <div class="stats-grid">
                 <div class="stat-card">
@@ -817,7 +838,7 @@
             const importanceExtent = d3.extent(data.nodes, d => d.importance);
             const colorScale = d3.scaleLinear()
                 .domain([importanceExtent[0], (importanceExtent[0] + importanceExtent[1]) / 2, importanceExtent[1]])
-                .range(['#ffaa00', '#00ff88', '#00d4ff']);
+                .range(['#ffb703', '#06d6a0', '#4895ef']);
             
             function getNodeSize(node) {
                 const sizing = document.getElementById('nodeSizing').value;
@@ -839,36 +860,55 @@
                 const nodeIds = new Set(filteredNodes.map(n => n.id));
                 const filteredLinks = data.links.filter(l => 
                     nodeIds.has(l.source.id || l.source) && nodeIds.has(l.target.id || l.target));
+
+                // Build adjacency map for details panel
+                const adjacency = new Map();
+                filteredLinks.forEach(l => {
+                    const s = l.source.id || l.source;
+                    const t = l.target.id || l.target;
+                    const w = l.value || l.weight || 1;
+                    if (!adjacency.has(s)) adjacency.set(s, []);
+                    if (!adjacency.has(t)) adjacency.set(t, []);
+                    adjacency.get(s).push({ id: t, weight: w });
+                    adjacency.get(t).push({ id: s, weight: w });
+                });
                 
-                document.getElementById('nodeCount').textContent = filteredNodes.length;
-                document.getElementById('totalAgentCount').textContent = summaryStats 
-                    ? summaryStats.total_agents.toLocaleString()
-                    : 'N/A';
-                document.getElementById('linkCount').textContent = filteredLinks.length;
-                document.getElementById('avgConnections').textContent = 
-                    filteredNodes.length > 0 ? (filteredLinks.length * 2 / filteredNodes.length).toFixed(1) : 0;
+                const listedEl = document.getElementById('listedAgentCount');
+                if (listedEl) listedEl.textContent = filteredNodes.length.toLocaleString();
+                const interEl = document.getElementById('agentsByInteraction');
+                if (interEl) interEl.textContent = filteredNodes.length.toLocaleString();
+                const linkEl = document.getElementById('linkCount');
+                if (linkEl) linkEl.textContent = filteredLinks.length.toLocaleString();
                 
                 g.selectAll('*').remove();
                 
                 const simulation = d3.forceSimulation(filteredNodes)
-                    .force('link', d3.forceLink(filteredLinks).id(d => d.id).distance(80))
-                    .force('charge', d3.forceManyBody().strength(-200))
+                    .force('link', d3.forceLink(filteredLinks).id(d => d.id).distance(90).strength(0.6))
+                    .force('charge', d3.forceManyBody().strength(-180))
                     .force('center', d3.forceCenter(width / 2, height / 2))
-                    .force('collision', d3.forceCollide().radius(d => getNodeSize(d) + 3));
+                    .force('collision', d3.forceCollide().radius(d => getNodeSize(d) + 4));
                 
                 const link = g.append('g').selectAll('line').data(filteredLinks).join('line')
-                    .attr('class', 'link').attr('stroke-width', d => Math.sqrt(d.value)).style('stroke-opacity', linkOpacity);
+                    .attr('class', 'link').attr('stroke-width', d => Math.max(1, Math.sqrt(d.value || d.weight || 1)))
+                    .style('stroke-opacity', linkOpacity).style('stroke', '#9fb3ff');
                 
                 const node = g.append('g').selectAll('circle').data(filteredNodes).join('circle')
                     .attr('class', 'node').attr('r', getNodeSize).attr('fill', d => colorScale(d.importance))
-                    .attr('stroke', '#fff').attr('stroke-width', 1.5)
+                    .attr('stroke', '#0b1021').attr('stroke-width', 1.6)
                     .call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended))
-                    .on('mouseover', showTooltip).on('mouseout', hideTooltip).on('click', highlightConnections);
+                    .on('mouseover', showTooltip).on('mouseout', hideTooltip).on('click', (e,d) => highlightConnections(d, adjacency));
+
+                // Always-visible labels for top nodes
+                const labeled = [...filteredNodes].sort((a,b)=>b.importance-a.importance).slice(0, 30);
+                const labels = g.append('g').selectAll('text').data(labeled).join('text')
+                    .attr('class', 'node-label')
+                    .text(d => d.id.length > 16 ? d.id.slice(0,16)+'…' : d.id);
                 
                 simulation.on('tick', () => {
                     link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
                         .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
                     node.attr('cx', d => d.x).attr('cy', d => d.y);
+                    labels.attr('x', d => d.x).attr('y', d => d.y - (getNodeSize(d) + 6));
                 });
                 
                 function dragstarted(e) { if (!e.active) simulation.alphaTarget(0.3).restart(); e.subject.fx = e.subject.x; e.subject.fy = e.subject.y; }
@@ -884,20 +924,34 @@
             }
             function hideTooltip() { d3.select('#tooltip').style('opacity', 0); }
             
-            function highlightConnections(e, clicked) {
+            function highlightConnections(clicked, adjacency) {
                 const connected = new Set([clicked.id]);
                 d3.selectAll('.link').each(function(l) {
                     if (l.source.id === clicked.id) { connected.add(l.target.id); d3.select(this).classed('link-highlighted', true); }
                     else if (l.target.id === clicked.id) { connected.add(l.source.id); d3.select(this).classed('link-highlighted', true); }
                     else d3.select(this).classed('link-highlighted', false);
                 });
-                d3.selectAll('.node').style('opacity', d => connected.has(d.id) ? 1 : 0.2);
+                d3.selectAll('.node').style('opacity', d => connected.has(d.id) ? 1 : 0.18);
+                updateNodeDetail(clicked, adjacency);
+            }
+
+            function updateNodeDetail(node, adjacency){
+                const panel = document.getElementById('nodeDetail');
+                if(!panel){ return; }
+                const neighbors = (adjacency.get(node.id) || []).sort((a,b)=>b.weight-a.weight).slice(0,10);
+                const list = neighbors.length ? neighbors.map(n=>`<div class="neighbor"><span>${n.id}</span><span>${n.weight} links</span></div>`).join('') : '<p style="color:var(--text-secondary);">No neighbors in current filter.</p>';
+                panel.innerHTML = `
+                    <h3>${node.id}</h3>
+                    <p>Engagement: ${node.engagement.toLocaleString()} • Topics: ${node.topics} • Importance: ${node.importance.toFixed(1)}</p>
+                    <p style="color:var(--text-secondary);">Top connections</p>
+                    ${list}
+                `;
             }
             
             document.getElementById('minConnections').addEventListener('input', e => { document.getElementById('minConnectionsValue').textContent = e.target.value; render(); });
             document.getElementById('nodeSizing').addEventListener('change', render);
             document.getElementById('linkOpacity').addEventListener('input', e => { document.getElementById('linkOpacityValue').textContent = e.target.value; d3.selectAll('.link').style('stroke-opacity', e.target.value); });
-            svg.on('click', e => { if (e.target === svg.node()) { d3.selectAll('.link').classed('link-highlighted', false); d3.selectAll('.node').style('opacity', 1); }});
+            svg.on('click', e => { if (e.target === svg.node()) { d3.selectAll('.link').classed('link-highlighted', false); d3.selectAll('.node').style('opacity', 1); const panel=document.getElementById('nodeDetail'); if(panel){ panel.innerHTML='<h3>Node details</h3><p>Click a node to see engagement, topics, and its top neighbors.</p>'; } }});
             
             render();
         }

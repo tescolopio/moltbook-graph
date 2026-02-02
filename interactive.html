@@ -335,7 +335,7 @@
         <!-- Network Tab -->
         <div id="network-tab" class="tab-content active">
             <h1>Agent Interaction Network</h1>
-            <p class="subtitle">Explore connections between AI agents. Drag nodes, zoom, and click for details.</p>
+            <p class="subtitle">Top agents by importance. Drag nodes, zoom, and click for details.</p>
             
             <div class="controls">
                 <div class="control-group">
@@ -378,7 +378,7 @@
         <!-- Topics Tab -->
         <div id="topics-tab" class="tab-content">
             <h1>Topic Bubble Chart</h1>
-            <p class="subtitle">Bubble size = posts, color intensity = engagement. Click to see details.</p>
+            <p class="subtitle">Top topics by engagement. Bubble size = posts, color intensity = engagement.</p>
             <svg id="topics-chart"></svg>
             <div class="stats-grid">
                 <div class="stat-card">
@@ -399,7 +399,7 @@
         <!-- Timeline Tab -->
         <div id="timeline-tab" class="tab-content">
             <h1>Activity Timeline</h1>
-            <p class="subtitle">Post frequency over time (by hour). Hover over bars for exact counts.</p>
+            <p class="subtitle">Post frequency over time. Recent data is hourly, older data is aggregated by 6-hour blocks.</p>
             <svg id="timeline-chart"></svg>
             <div class="stats-grid">
                 <div class="stat-card">
@@ -454,10 +454,11 @@
             d3.json('network_data.json'),
             d3.json('topic_data.json'),
             d3.json('timeline_data.json'),
-            d3.json('leaderboard_data.json')
-        ]).then(([networkData, topicData, timelineData, leaderboardData]) => {
-            initializeNetwork(networkData);
-            initializeTopics(topicData);
+            d3.json('leaderboard_data.json'),
+            d3.json('summary_stats.json').catch(() => null)  // Optional, may not exist yet
+        ]).then(([networkData, topicData, timelineData, leaderboardData, summary]) => {
+            initializeNetwork(networkData, summary);
+            initializeTopics(topicData, summary);
             initializeTimeline(timelineData);
             initializeLeaderboard(leaderboardData);
         }).catch(error => {
@@ -465,7 +466,10 @@
         });
         
         // ==================== NETWORK ====================
-        function initializeNetwork(data) {
+        let summaryStats = null;
+        
+        function initializeNetwork(data, summary) {
+            summaryStats = summary;
             const svg = d3.select('#network');
             const width = svg.node().getBoundingClientRect().width || 1200;
             const height = 700;
@@ -500,8 +504,12 @@
                 const filteredLinks = data.links.filter(l => 
                     nodeIds.has(l.source.id || l.source) && nodeIds.has(l.target.id || l.target));
                 
-                document.getElementById('nodeCount').textContent = filteredNodes.length;
-                document.getElementById('linkCount').textContent = filteredLinks.length;
+                document.getElementById('nodeCount').textContent = summaryStats 
+                    ? `${filteredNodes.length} of ${summaryStats.total_agents}` 
+                    : filteredNodes.length;
+                document.getElementById('linkCount').textContent = summaryStats
+                    ? `${filteredLinks.length} of ${summaryStats.total_relationships}`
+                    : filteredLinks.length;
                 document.getElementById('avgConnections').textContent = 
                     filteredNodes.length > 0 ? (filteredLinks.length * 2 / filteredNodes.length).toFixed(1) : 0;
                 
@@ -559,7 +567,7 @@
         }
         
         // ==================== TOPICS ====================
-        function initializeTopics(data) {
+        function initializeTopics(data, summary) {
             if (!data || data.length === 0) return;
             
             const svg = d3.select('#topics-chart');
@@ -567,7 +575,9 @@
             const height = 600;
             svg.attr('viewBox', [0, 0, width, height]);
             
-            document.getElementById('topicCount').textContent = data.length;
+            document.getElementById('topicCount').textContent = summary 
+                ? `${data.length} of ${summary.total_topics}` 
+                : data.length;
             document.getElementById('totalPosts').textContent = d3.sum(data, d => d.posts).toLocaleString();
             document.getElementById('totalEngagement').textContent = d3.sum(data, d => d.engagement).toLocaleString();
             

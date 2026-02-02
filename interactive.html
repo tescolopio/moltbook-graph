@@ -173,6 +173,17 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.35);
         }
 
+        #topic-network {
+            background: radial-gradient(circle at 25% 25%, rgba(0,221,255,0.08), transparent 36%),
+                        radial-gradient(circle at 70% 20%, rgba(255,107,61,0.07), transparent 30%),
+                        var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            width: 100%;
+            height: 650px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.32);
+        }
+
         .network-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem; }
         .network-detail, .network-legend { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; line-height: 1.6; }
         .network-detail h3, .network-legend h3 { margin-bottom: 0.35rem; color: var(--text-primary); font-size: 1rem; }
@@ -180,6 +191,7 @@
         .neighbor { display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.9rem; }
         .neighbor span { color: var(--text-primary); font-weight: 600; }
         .node-label { fill: var(--text-primary); font-size: 10px; font-weight: 700; stroke: rgba(11,16,33,0.7); stroke-width: 2; paint-order: stroke; pointer-events: none; }
+        .node-inline-label { fill: #0b1021; font-size: 8px; font-weight: 700; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: rgba(255,255,255,0.75); stroke-width: 1.4; }
         
         #tooltip {
             position: absolute;
@@ -457,6 +469,7 @@
     
     <div class="tabs">
         <div class="tab active" data-tab="network">🕸️ Network</div>
+        <div class="tab" data-tab="topic-network">🌐 Topic Network</div>
         <div class="tab" data-tab="topics">💬 Topics</div>
         <div class="tab" data-tab="connections">🔗 Top Pairs</div>
         <div class="tab" data-tab="timeline">📈 Timeline</div>
@@ -530,6 +543,58 @@
                 <div class="stat-card">
                     <div class="stat-value" id="linkCount">0</div>
                     <div class="stat-label">Total Connections</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Topic Network Tab -->
+        <div id="topic-network-tab" class="tab-content">
+            <h1>Topic Relationship Network</h1>
+            <p class="subtitle">Topics connect when the same agents post in both. Size by posts, engagement, or agent count; filter by shared-agent overlap.</p>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Min Shared Agents: <span id="minSharedAgentsValue">2</span></label>
+                    <input type="range" id="minSharedAgents" min="1" max="12" value="2">
+                </div>
+                <div class="control-group">
+                    <label>Node Size By:</label>
+                    <select id="topicNodeSizing">
+                        <option value="posts" selected>Posts</option>
+                        <option value="engagement">Engagement</option>
+                        <option value="agents">Agents</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Link Opacity: <span id="topicLinkOpacityValue">0.5</span></label>
+                    <input type="range" id="topicLinkOpacity" min="0" max="1" step="0.1" value="0.5">
+                </div>
+            </div>
+
+            <svg id="topic-network"></svg>
+            <div class="network-meta">
+                <div class="network-detail" id="topicNodeDetail">
+                    <h3>Topic details</h3>
+                    <p>Click a topic to see its posts, engagement, unique agents, and top co-discussed neighbors.</p>
+                </div>
+                <div class="network-legend">
+                    <h3>Legend</h3>
+                    <p>Nodes: topics. Edges: count of agents who posted in both topics. Size: posts/engagement/agents (toggle). Color: engagement gradient. Drag to reposition; scroll to zoom.</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="topicNetworkNodeCount">0</div>
+                    <div class="stat-label">Visible Topics</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="topicNetworkEdgeCount">0</div>
+                    <div class="stat-label">Topic Links</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="topicNetworkAvgOverlap">0</div>
+                    <div class="stat-label">Avg Shared Agents</div>
                 </div>
             </div>
         </div>
@@ -898,16 +963,21 @@
                     .call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended))
                     .on('mouseover', showTooltip).on('mouseout', hideTooltip).on('click', (e,d) => highlightConnections(d, adjacency));
 
-                // Always-visible labels for top nodes
-                const labeled = [...filteredNodes].sort((a,b)=>b.importance-a.importance).slice(0, 30);
+                const inlineLabels = g.append('g').selectAll('text').data(filteredNodes).join('text')
+                    .attr('class', 'node-inline-label')
+                    .text(d => d.id.length > 8 ? d.id.slice(0,8)+'…' : d.id);
+
+                // Labels for visible nodes (trimmed to top by importance)
+                const labeled = [...filteredNodes].sort((a,b)=>b.importance-a.importance).slice(0, 60);
                 const labels = g.append('g').selectAll('text').data(labeled).join('text')
                     .attr('class', 'node-label')
-                    .text(d => d.id.length > 16 ? d.id.slice(0,16)+'…' : d.id);
+                    .text(d => d.id.length > 18 ? d.id.slice(0,18)+'…' : d.id);
                 
                 simulation.on('tick', () => {
                     link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
                         .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
                     node.attr('cx', d => d.x).attr('cy', d => d.y);
+                    inlineLabels.attr('x', d => d.x).attr('y', d => d.y + 2);
                     labels.attr('x', d => d.x).attr('y', d => d.y - (getNodeSize(d) + 6));
                 });
                 

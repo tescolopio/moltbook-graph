@@ -874,7 +874,7 @@
             // Data: summary_stats.json (total vs displayed metrics)
             // Aggregation: Percentage coverage (displayed/total)
             // Update: Every 5 minutes (static HTML report)
-            initializeQuality();
+            initializeQuality(summary, networkData);
             
             // 8. ACTIVITY HEATMAP TAB
             // Displays: Day-of-week × Hour-of-day grid
@@ -1283,10 +1283,10 @@
             // Stats
             document.getElementById('timelinePeriods').textContent = data.length;
             const peak = data.reduce((a, b) => a.count > b.count ? a : b);
-            document.getElementById('peakHour').textContent = peak.time.split('T')[1] || peak.time;
+            document.getElementById('peakHour').textContent = peak.date || peak.time || '';
             document.getElementById('avgActivity').textContent = (d3.sum(data, d => d.count) / data.length).toFixed(1);
             
-            const x = d3.scaleBand().domain(data.map(d => d.time)).range([0, width]).padding(0.2);
+            const x = d3.scaleBand().domain(data.map(d => d.date || d.time)).range([0, width]).padding(0.2);
             const y = d3.scaleLinear().domain([0, d3.max(data, d => d.count)]).nice().range([height, 0]);
             
             // Grid
@@ -1295,11 +1295,11 @@
             
             // Bars
             g.selectAll('.bar').data(data).join('rect')
-                .attr('class', 'bar').attr('x', d => x(d.time)).attr('y', d => y(d.count))
+                .attr('class', 'bar').attr('x', d => x(d.date || d.time)).attr('y', d => y(d.count))
                 .attr('width', x.bandwidth()).attr('height', d => height - y(d.count))
                 .on('mouseover', (e, d) => {
                     d3.select('#tooltip').style('opacity', 1)
-                        .html(`<strong>${d.time}</strong><br>Posts: ${d.count}`)
+                        .html(`<strong>${d.date || d.time}</strong><br>Posts: ${d.count}`)
                         .style('left', (e.pageX + 10) + 'px').style('top', (e.pageY - 10) + 'px');
                 })
                 .on('mouseout', () => d3.select('#tooltip').style('opacity', 0));
@@ -1369,19 +1369,25 @@
             }
             
             const container = document.getElementById('connections-list');
-            container.innerHTML = data.map((conn, i) => `
+            container.innerHTML = data.map((conn, i) => {
+                const a1 = conn.agent1 || (conn.agents && conn.agents[0]) || '';
+                const a2 = conn.agent2 || (conn.agents && conn.agents[1]) || '';
+                const shared = conn.shared_topics || conn.shared || [];
+                const sample = shared.slice(0, 4);
+                const count = conn.count || conn.weight || shared.length || 0;
+                return `
                 <div class="connection-card">
                     <div class="connection-pair">
-                        <span class="agent">${conn.agents[0]}</span>
+                        <span class="agent">${a1}</span>
                         <span class="link-icon">⚡</span>
-                        <span class="agent">${conn.agents[1]}</span>
+                        <span class="agent">${a2}</span>
                     </div>
-                    <div class="shared-count">🔗 ${conn.shared_topics} shared topics</div>
+                    <div class="shared-count">🔗 ${count} shared topics</div>
                     <div class="sample-topics">
-                        ${conn.sample_topics.map(t => `<span class="topic-tag">${t}</span>`).join('')}
+                        ${sample.length ? sample.map(t => `<span class="topic-tag">${t}</span>`).join('') : '<span class="topic-tag">No topic list</span>'}
                     </div>
                 </div>
-            `).join('');
+            `; }).join('');
         }
         
         // ==================== GROWTH TREND ====================
@@ -1539,56 +1545,40 @@
         }
         
         // ==================== DATA QUALITY ====================
-        function initializeQuality() {
+        function initializeQuality(summary, networkData) {
             try {
-                console.log('Initializing Data Quality Report');
+                const container = document.getElementById('quality-report');
+                if (!container) return;
+
+                const totalAgents = summary ? summary.total_agents : 0;
+                const totalTopics = summary ? summary.total_topics : 0;
+                const totalPosts = summary ? summary.total_posts : 0;
+                const displayedAgents = networkData && networkData.nodes ? networkData.nodes.length : 0;
+                const hiddenAgents = Math.max(0, totalAgents - displayedAgents);
+                const hiddenPct = totalAgents ? ((hiddenAgents / totalAgents) * 100).toFixed(1) : '0.0';
+                const crawlTime = summary && summary.crawled_at ? new Date(summary.crawled_at).toUTCString() : 'n/a';
+
                 const report = `
-                <h3 style="color: var(--error); margin-bottom: 1rem;">🚨 Data Quality Issues Detected</h3>
-                
-                <div style="margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent); margin-bottom: 0.75rem;">Agent Count Discrepancy</h4>
-                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>Total Listed:</strong> 3,261 agents</p>
-                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>Visible in Network:</strong> 200 agents (6.1%)</p>
-                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>Hidden (no connections):</strong> 3,061 agents (93.9%)</p>
-                    <p style="color: var(--warning);"><strong>⚠️ Status:</strong> Normal for social networks, but indicates high number of inactive agents</p>
+                <h3 style="color: var(--accent); margin-bottom: 0.75rem;">Data Quality Snapshot</h3>
+
+                <div style="margin-bottom: 1rem;">
+                    <p style="color: var(--text-secondary); margin-bottom: 0.25rem;"><strong>Total agents:</strong> ${totalAgents.toLocaleString()}</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.25rem;"><strong>Visible in network:</strong> ${displayedAgents.toLocaleString()} (${hiddenPct}% hidden tail)</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.25rem;"><strong>Topics tracked:</strong> ${totalTopics.toLocaleString()}</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.25rem;"><strong>Posts counted:</strong> ${totalPosts.toLocaleString()}</p>
                 </div>
-                
-                <div style="margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent); margin-bottom: 0.75rem;">Single-Post Agents</h4>
-                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>Count:</strong> ~1,500 agents (46% of total)</p>
-                    <p style="color: var(--warning);"><strong>⚠️ Suspicious Pattern:</strong> Unusually high ratio suggests possible artificial inflation or one-off bots</p>
-                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>Recommendation:</strong> Consider 2+ posts as minimum threshold for active agents</p>
+
+                <div style="margin-bottom: 1rem;">
+                    <h4 style="color: var(--accent); margin-bottom: 0.35rem;">Coverage</h4>
+                    <p style="color: var(--warning);">Most agents remain in the tail; use the network filters to focus on well-connected nodes.</p>
                 </div>
-                
-                <div style="margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent); margin-bottom: 0.75rem;">Suspicious Agent Names & Patterns</h4>
-                    <p style="color: var(--text-secondary); margin-bottom: 0.75rem;"><strong>Detected Bots:</strong></p>
-                    <ul style="margin-left: 1rem; color: var(--text-secondary);">
-                        <li>ValeriyMLBot - Generic ML bot with single post</li>
-                        <li>TommyToolbot - Likely tool bot, single post</li>
-                        <li>DuckBot - Generic pattern bot, single post</li>
-                        <li>"waterstone", "ironstone", "limestone" - Sequential naming with identical engagement (389-416 range)</li>
-                    </ul>
-                    <p style="color: var(--error);"><strong>🚨 HIGH SEVERITY:</strong> Sequential engagement scores indicate coordinated artificial inflation</p>
-                </div>
-                
-                <div style="margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent); margin-bottom: 0.75rem;">Recommendations</h4>
-                    <ol style="margin-left: 1rem; color: var(--text-secondary);">
-                        <li><strong>Set minimum engagement threshold:</strong> Filter agents with 2+ posts and engagement > 10</li>
-                        <li><strong>Track growth trends:</strong> Monitor agent count across crawls to detect sudden inflation</li>
-                        <li><strong>Block known bots:</strong> Manually exclude ValeriyMLBot, TommyToolbot, DuckBot, and similar patterns</li>
-                        <li><strong>Analyze sequential patterns:</strong> Investigate agents with suspiciously similar metrics</li>
-                        <li><strong>Regular audits:</strong> Run data quality checks after each crawl to catch new patterns</li>
-                    </ol>
-                </div>
-                
-                <div style="padding: 1rem; background: rgba(0,255,136,0.05); border-left: 3px solid var(--success); border-radius: 4px;">
-                    <p style="color: var(--text-secondary);"><strong>📊 Last Audit:</strong> Feb 2, 2026 08:47:29 UTC</p>
-                    <p style="color: var(--text-secondary); margin-top: 0.5rem;"><strong>Filtered Network (top 200):</strong> Represents most connected and authentic agents</p>
+
+                <div style="padding: 0.75rem; background: rgba(0,255,136,0.05); border-left: 3px solid var(--success); border-radius: 4px;">
+                    <p style="color: var(--text-secondary); margin-bottom: 0.25rem;"><strong>Last Crawl:</strong> ${crawlTime}</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.25rem;">Data auto-refreshes every few minutes from the pipeline.</p>
                 </div>
             `;
-            document.getElementById('quality-report').innerHTML = report;
+                container.innerHTML = report;
             } catch (error) {
                 console.error('Error rendering quality report:', error);
                 const container = document.getElementById('quality-report');
@@ -1618,7 +1608,7 @@
                 // Create a simple text-based heatmap
                 const maxCount = d3.max(data, d => d.count);
                 const minCount = d3.min(data, d => d.count);
-                const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
                 
                 // Create a grid
                 let html = '<table style="border-collapse: collapse; margin: 1rem 0;"><tr><th style="padding: 0.5rem;">Hour</th>';

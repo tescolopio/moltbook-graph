@@ -6,6 +6,9 @@ on:
     - cron: '0 * * * *'
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -53,7 +56,7 @@ jobs:
             --neo-uri bolt://localhost:7687 \
             --neo-user neo4j \
             --neo-password "$NEO4J_PASS" \
-            --max-posts 500
+            --max-posts 1000
             
       - name: Generate visualizations
         env:
@@ -64,7 +67,7 @@ jobs:
             --neo-user neo4j \
             --neo-password "$NEO4J_PASS" \
             --output-dir . \
-            --max-agents 200 \
+            --max-agents 500 \
             --min-engagement 0
           
           python3 scripts/generate_interactive_data.py \
@@ -72,7 +75,7 @@ jobs:
             --neo-user neo4j \
             --neo-password "$NEO4J_PASS" \
             --output-dir . \
-            --max-agents 200
+            --max-agents 500
             
       - name: Generate HTML
         run: |

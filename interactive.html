@@ -661,15 +661,15 @@
         // Exports as static JSON served via GitHub Pages
         //
         Promise.all([
-            d3.json('network_data.json'),       // Force-directed graph nodes/edges
-            d3.json('topic_data.json'),         // Bubble chart data
-            d3.json('timeline_data.json'),      // Area chart growth data
-            d3.json('leaderboard_data.json'),   // Ranking table data
-            d3.json('connections_data.json').catch(() => []),     // Agent pair connections
-            d3.json('summary_stats.json').catch(() => null),      // Global stats
-            d3.json('agent_history.json').catch(() => null),      // Crawl metadata
-            d3.json('agent_history_viz.json').catch(() => []),    // Growth trend
-            d3.json('heatmap_data.json').catch(() => [])          // Activity heatmap
+            d3.json('data/network_data.json'),       // Force-directed graph nodes/edges
+            d3.json('data/topic_data.json'),         // Bubble chart data
+            d3.json('data/timeline_data.json'),      // Area chart growth data
+            d3.json('data/leaderboard_data.json'),   // Ranking table data
+            d3.json('data/connections_data.json').catch(() => []),     // Agent pair connections
+            d3.json('data/summary_stats.json').catch(() => null),      // Global stats
+            d3.json('data/agent_history.json').catch(() => null),      // Crawl metadata
+            d3.json('data/agent_history_viz.json').catch(() => []),    // Growth trend
+            d3.json('data/heatmap_data.json').catch(() => [])          // Activity heatmap
         ]).then(([networkData, topicData, timelineData, leaderboardData, connectionsData, summary, history, growthData, heatmapData]) => {
             // ========================================================
             // SUCCESS: ALL DATA LOADED

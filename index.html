@@ -144,10 +144,10 @@
     async function loadData(){
         try {
             const [summary, wordCloud, heatmap, network] = await Promise.all([
-                fetch('summary_stats.json').then(r=>r.json()).catch(()=>({})),
-                fetch('word_cloud_data.json').then(r=>r.json()).catch(()=>[]),
-                fetch('heatmap_data.json').then(r=>r.json()).catch(()=>[]),
-                fetch('network_data.json').then(r=>r.json()).catch(()=>({nodes:[],links:[]}))
+                fetch('data/summary_stats.json').then(r=>r.json()).catch(()=>({})),
+                fetch('data/word_cloud_data.json').then(r=>r.json()).catch(()=>[]),
+                fetch('data/heatmap_data.json').then(r=>r.json()).catch(()=>[]),
+                fetch('data/network_data.json').then(r=>r.json()).catch(()=>({nodes:[],links:[]}))
             ]);
             renderStats(summary);
             renderWordCloud(wordCloud);

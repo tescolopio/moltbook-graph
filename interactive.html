@@ -210,6 +210,27 @@
             letter-spacing: 0.05em;
         }
         
+        .quality-warning {
+            background: var(--bg-card);
+            border: 2px solid var(--warning);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--warning);
+        }
+        
+        .quality-warning h3 {
+            color: var(--warning);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .quality-warning ul {
+            margin-left: 1.5rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
         /* Timeline chart */
         #timeline-chart {
             background: var(--bg-card);
@@ -428,6 +449,16 @@
             <h1>Agent Interaction Network</h1>
             <p class="subtitle">Top agents by importance. Drag nodes, zoom, and click for details.</p>
             
+            <div id="quality-warning" class="quality-warning" style="display:none;">
+                <h3>⚠️ Data Quality Notice</h3>
+                <ul>
+                    <li><strong id="hidden-agents-pct">93.9%</strong> of agents are in the hidden tail (no connections shown)</li>
+                    <li>Many single-post agents with <strong>sequentially similar engagement scores</strong> detected</li>
+                    <li>Generic names ("waterstone", "ironstone", etc.) with identical metrics suggest possible artificial inflation</li>
+                    <li><strong>Recommendation:</strong> Filter by engagement threshold to focus on authentic activity</li>
+                </ul>
+            </div>
+            
             <div class="controls">
                 <div class="control-group">
                     <label>Min Connections: <span id="minConnectionsValue">1</span></label>
@@ -453,7 +484,11 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value" id="nodeCount">0</div>
-                    <div class="stat-label">Agents</div>
+                    <div class="stat-label">Agents (Displayed)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalAgentCount">0</div>
+                    <div class="stat-label">Total Agents</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="linkCount">0</div>
@@ -570,6 +605,18 @@
         
         function initializeNetwork(data, summary) {
             summaryStats = summary;
+            
+            // Show quality warning
+            if (summary) {
+                const displayedAgents = data.nodes.length;
+                const totalAgents = summary.total_agents;
+                const hiddenAgents = totalAgents - displayedAgents;
+                const hiddenPct = (hiddenAgents / totalAgents * 100).toFixed(1);
+                
+                document.getElementById('quality-warning').style.display = 'block';
+                document.getElementById('hidden-agents-pct').textContent = hiddenPct + '%';
+            }
+            
             const svg = d3.select('#network');
             const width = svg.node().getBoundingClientRect().width || 1200;
             const height = 700;
@@ -604,11 +651,12 @@
                 const filteredLinks = data.links.filter(l => 
                     nodeIds.has(l.source.id || l.source) && nodeIds.has(l.target.id || l.target));
                 
-                document.getElementById('nodeCount').textContent = summaryStats 
-                    ? `${filteredNodes.length} of ${summaryStats.total_agents}` 
-                    : filteredNodes.length;
+                document.getElementById('nodeCount').textContent = filteredNodes.length;
+                document.getElementById('totalAgentCount').textContent = summaryStats 
+                    ? summaryStats.total_agents.toLocaleString()
+                    : 'N/A';
                 document.getElementById('linkCount').textContent = summaryStats
-                    ? `${filteredLinks.length} of ${summaryStats.total_relationships}`
+                    ? filteredLinks.length
                     : filteredLinks.length;
                 document.getElementById('avgConnections').textContent = 
                     filteredNodes.length > 0 ? (filteredLinks.length * 2 / filteredNodes.length).toFixed(1) : 0;

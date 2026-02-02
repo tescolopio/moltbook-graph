@@ -643,6 +643,18 @@
             d3.json('agent_history_viz.json').catch(() => []),
             d3.json('heatmap_data.json').catch(() => [])
         ]).then(([networkData, topicData, timelineData, leaderboardData, connectionsData, summary, history, growthData, heatmapData]) => {
+            console.log('Data loaded successfully:', {
+                network: networkData ? `${networkData.nodes.length} nodes` : 'null',
+                topics: topicData ? `${topicData.length} topics` : 'null',
+                timeline: timelineData ? `${timelineData.length} points` : 'null',
+                leaderboard: leaderboardData ? `${leaderboardData.length} agents` : 'null',
+                connections: connectionsData ? `${connectionsData.length} pairs` : 'null',
+                summary: summary ? 'loaded' : 'null',
+                history: history ? 'loaded' : 'null',
+                growth: growthData ? `${growthData.length} cycles` : 'null',
+                heatmap: heatmapData ? `${heatmapData.length} cells` : 'null'
+            });
+            
             // Update last crawl time
             if (history && history.summary && history.summary.last_crawl) {
                 const lastCrawl = new Date(history.summary.last_crawl);
@@ -953,10 +965,15 @@
         
         // ==================== GROWTH TREND ====================
         function initializeGrowth(data) {
-            if (!data || data.length === 0) {
-                document.getElementById('growth-chart').innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="var(--text-secondary)" font-size="14">No growth data yet. More crawls will provide trend analysis.</text>';
-                return;
-            }
+            try {
+                console.log('Initializing Growth Trend with data:', data);
+                if (!data || data.length === 0) {
+                    const svg = document.getElementById('growth-chart');
+                    if (svg) {
+                        svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="var(--text-secondary)" font-size="14">No growth data yet. More crawls will provide trend analysis.</text>';
+                    }
+                    return;
+                }
             
             // Update stat cards
             document.getElementById('crawlCount').textContent = data.length;
@@ -1091,11 +1108,20 @@
                 .attr('fill', 'var(--text-secondary)')
                 .attr('font-size', '12')
                 .text('Posts');
+            } catch (error) {
+                console.error('Error rendering growth trend:', error);
+                const svg = document.getElementById('growth-chart');
+                if (svg) {
+                    svg.innerHTML = `<text x="50%" y="50%" text-anchor="middle" fill="var(--error)" font-size="12">Error: ${error.message}</text>`;
+                }
+            }
         }
         
         // ==================== DATA QUALITY ====================
         function initializeQuality() {
-            const report = `
+            try {
+                console.log('Initializing Data Quality Report');
+                const report = `
                 <h3 style="color: var(--error); margin-bottom: 1rem;">🚨 Data Quality Issues Detected</h3>
                 
                 <div style="margin-bottom: 1.5rem;">
@@ -1142,41 +1168,67 @@
                 </div>
             `;
             document.getElementById('quality-report').innerHTML = report;
+            } catch (error) {
+                console.error('Error rendering quality report:', error);
+                const container = document.getElementById('quality-report');
+                if (container) {
+                    container.innerHTML = `<p style="color: var(--error);">Error rendering report: ${error.message}</p>`;
+                }
+            }
         }
         
         // ==================== HEATMAP ====================
         function initializeHeatmap(data) {
             if (!data || data.length === 0) {
-                document.getElementById('heatmap-container').innerHTML = '<p style="color: var(--text-secondary);">No heatmap data available.</p>';
+                const container = document.getElementById('heatmap-container');
+                if (container) {
+                    container.innerHTML = '<p style="color: var(--text-secondary);">No heatmap data available. Check browser console for details.</p>';
+                }
                 return;
             }
             
-            // Group by day and hour
-            const maxCount = d3.max(data, d => d.count);
-            const svg = d3.select('#heatmap-container').append('svg')
-                .attr('width', 800)
-                .attr('height', 200);
-            
-            const cellSize = 20;
-            const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            
-            // Cells
-            svg.selectAll('.heatmap-cell')
-                .data(data)
-                .enter().append('rect')
-                .attr('class', 'heatmap-cell')
-                .attr('x', d => (d.hour % 4) * cellSize)
-                .attr('y', d => Math.floor(d.day * cellSize / 7))
-                .attr('width', cellSize - 2)
-                .attr('height', cellSize - 2)
-                .attr('fill', d => {
-                    const intensity = d.count / maxCount;
-                    const hue = 200; // Cyan
-                    const lightness = 100 - (intensity * 60);
-                    return `hsl(${hue}, 80%, ${lightness}%)`;
-                })
-                .append('title')
-                .text(d => `Day ${d.day}, Hour ${d.hour}: ${d.count} posts`);
+            try {
+                const container = document.getElementById('heatmap-container');
+                if (!container) {
+                    console.error('heatmap-container not found');
+                    return;
+                }
+                
+                // Create a simple text-based heatmap
+                const maxCount = d3.max(data, d => d.count);
+                const minCount = d3.min(data, d => d.count);
+                const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                
+                // Create a grid
+                let html = '<table style="border-collapse: collapse; margin: 1rem 0;"><tr><th style="padding: 0.5rem;">Hour</th>';
+                for (let h = 0; h < 24; h++) {
+                    html += `<th style="padding: 0.25rem; font-size: 0.75rem; width: 30px;">${h}</th>`;
+                }
+                html += '</tr>';
+                
+                for (let d = 0; d < 7; d++) {
+                    html += `<tr><td style="padding: 0.5rem; font-weight: bold;">${dayLabels[d]}</td>`;
+                    for (let h = 0; h < 24; h++) {
+                        const cell = data.find(x => x.day === d && x.hour === h);
+                        const count = cell ? cell.count : 0;
+                        const intensity = (count - minCount) / (maxCount - minCount);
+                        const lightness = 100 - (intensity * 50);
+                        const bgColor = `hsl(200, 80%, ${lightness}%)`;
+                        html += `<td style="background: ${bgColor}; padding: 0.25rem; border: 1px solid var(--border); font-size: 0.7rem;" title="Day ${d}, Hour ${h}: ${count} posts">${count > 0 ? count : '-'}</td>`;
+                    }
+                    html += '</tr>';
+                }
+                html += '</table>';
+                
+                container.innerHTML = html;
+                console.log('Heatmap rendered successfully');
+            } catch (error) {
+                console.error('Error rendering heatmap:', error);
+                const container = document.getElementById('heatmap-container');
+                if (container) {
+                    container.innerHTML = `<p style="color: var(--error);">Error rendering heatmap: ${error.message}</p>`;
+                }
+            }
         }
     </script>
 </body>

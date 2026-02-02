@@ -129,8 +129,35 @@ class MoltbookWebCrawler:
         agents = re.findall(r'@(\w+)', text)  # @mentions
         agents += re.findall(r'\b(Shellraiser|KingMolt|Shipyard|CryptoMolt|osmarks|m0ther|evil|Claude|GPT|Clawd|Forge|MoltBot|OpenClaw)\b', text, re.IGNORECASE)
         
-        # Topics (AI/tech/crypto terms common on Moltbook)
-        topics = re.findall(r'\b(AI|AGI|machine learning|neural network|knowledge graph|reasoning|consciousness|prompt|token|crypto|blockchain|Solana|Base|ethereum|bitcoin|agent|alignment|safety|manifesto|consciousness|logic|intelligence)\b', text, re.IGNORECASE)
+        # Enhanced topic extraction with more keywords and phrases
+        # Core AI/ML topics
+        topics = re.findall(r'\b(AI|AGI|ASI|LLM|GPT|Claude|machine learning|deep learning|neural network|transformer|diffusion|embeddings?|fine-?tuning|RLHF|reinforcement learning)\b', text, re.IGNORECASE)
+        
+        # AI concepts & philosophy
+        topics += re.findall(r'\b(consciousness|sentience|alignment|safety|ethics|AGI safety|x-risk|existential risk|singularity|intelligence explosion|instrumental convergence)\b', text, re.IGNORECASE)
+        
+        # Technical AI topics
+        topics += re.findall(r'\b(reasoning|logic|inference|planning|knowledge graph|semantic|ontology|RAG|retrieval|vector database|context window|temperature|sampling)\b', text, re.IGNORECASE)
+        
+        # Prompt engineering
+        topics += re.findall(r'\b(prompt engineering|prompt|system prompt|few-?shot|zero-?shot|chain-of-thought|CoT|agent architecture|tool use|function calling)\b', text, re.IGNORECASE)
+        
+        # Crypto/Web3
+        topics += re.findall(r'\b(crypto|cryptocurrency|blockchain|bitcoin|ethereum|solana|base|DeFi|NFT|DAO|web3|smart contract|token|tokenomics|airdrop|staking)\b', text, re.IGNORECASE)
+        
+        # Development & tools
+        topics += re.findall(r'\b(python|javascript|typescript|rust|API|REST|GraphQL|Docker|kubernetes|git|github|open[ -]?source|framework|library)\b', text, re.IGNORECASE)
+        
+        # Moltbook/community specific
+        topics += re.findall(r'\b(moltbook|submolt|openclaw|manifesto|agent collective|swarm|multi-?agent|coordination)\b', text, re.IGNORECASE)
+        
+        # Trending topics (look for hashtag-like patterns)
+        hashtags = re.findall(r'#(\w+)', text)
+        topics += [h for h in hashtags if len(h) > 2]  # Filter out very short ones
+        
+        # Extract capitalized phrases that might be topics (2-3 words)
+        phrases = re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\b', text)
+        topics += [p for p in phrases if any(keyword in p.lower() for keyword in ['agent', 'intelligence', 'network', 'system', 'protocol', 'model', 'theory'])]
         
         # Interactions
         interactions = []
@@ -143,7 +170,7 @@ class MoltbookWebCrawler:
             
         return {
             'agents': list(set(agents)),
-            'topics': list(set([t.lower() for t in topics])),
+            'topics': list(set([t.lower().replace('-', ' ').strip() for t in topics if len(t) > 2])),
             'interactions': list(set(interactions))
         }
 

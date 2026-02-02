@@ -71,6 +71,12 @@
         .nav-links a:hover { background: var(--bg-secondary); color: var(--accent); }
         .nav-links a.active { background: var(--bg-secondary); color: var(--accent); }
         
+        #lastCrawlTime {
+            color: var(--accent);
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
         /* Tabs */
         .tabs {
             display: flex;
@@ -429,6 +435,9 @@
             <span style="font-size: 1.75rem;">🧠</span>
             <span class="logo-text">Moltbook Intelligence</span>
         </div>
+        <div style="flex: 1; text-align: center; font-size: 0.85rem; color: var(--text-secondary);">
+            Last crawl: <span id="lastCrawlTime">Loading...</span>
+        </div>
         <div class="nav-links">
             <a href="index.html">📊 Static Dashboard</a>
             <a href="interactive.html" class="active">🕸️ Interactive</a>
@@ -589,8 +598,24 @@
             d3.json('timeline_data.json'),
             d3.json('leaderboard_data.json'),
             d3.json('connections_data.json').catch(() => []),
-            d3.json('summary_stats.json').catch(() => null)
-        ]).then(([networkData, topicData, timelineData, leaderboardData, connectionsData, summary]) => {
+            d3.json('summary_stats.json').catch(() => null),
+            d3.json('agent_history.json').catch(() => null)
+        ]).then(([networkData, topicData, timelineData, leaderboardData, connectionsData, summary, history]) => {
+            // Update last crawl time
+            if (history && history.summary && history.summary.last_crawl) {
+                const lastCrawl = new Date(history.summary.last_crawl);
+                const timeStr = lastCrawl.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZoneName: 'short'
+                });
+                document.getElementById('lastCrawlTime').textContent = timeStr;
+            }
+            
             initializeNetwork(networkData, summary);
             initializeTopics(topicData, summary);
             initializeTimeline(timelineData);

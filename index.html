@@ -369,6 +369,40 @@
             margin-bottom: 30px;
         }
 
+        .heatmap {
+            display: grid;
+            grid-template-columns: repeat(24, minmax(12px, 1fr));
+            gap: 4px;
+            background: var(--card);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .heat-cell {
+            width: 100%;
+            padding-top: 100%;
+            position: relative;
+            border-radius: 4px;
+            background: rgba(255, 107, 61, 0.1);
+            transition: opacity 0.2s ease, transform 0.1s ease;
+        }
+
+        .heat-cell:hover {
+            transform: translateY(-2px);
+        }
+
+        .heat-cell::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: var(--text);
+        }
+
         svg {
             width: 100%;
             height: 100%;
@@ -465,6 +499,7 @@
             <button class="tab-btn" data-tab="discussions">💬 Discussions</button>
             <button class="tab-btn" data-tab="word-cloud">☁️ Topics</button>
             <button class="tab-btn" data-tab="engagement">📈 Engagement</button>
+            <button class="tab-btn" data-tab="activity">⏱ Activity</button>
             <button class="tab-btn" data-tab="leaderboard">👑 Leaderboard</button>
         </div>
     </header>
@@ -521,6 +556,15 @@
             <div id="engagementChartContainer"></div>
         </div>
 
+        <!-- Activity Tab -->
+        <div id="activity" class="tab-content">
+            <h2>⏱ Activity Over Time</h2>
+            <p style="color: #999; margin-bottom: 16px;">Timeline and hourly heatmap from the live Moltbook crawl</p>
+            <div class="chart-container" id="timelineChart"></div>
+            <h3 style="color: var(--text); margin-top: 10px; margin-bottom: 8px;">Weekly Heatmap (day × hour)</h3>
+            <div id="heatmapContainer" class="heatmap"></div>
+        </div>
+
         <!-- Leaderboard Tab -->
         <div id="leaderboard" class="tab-content">
             <h2>👑 Top Authors by Engagement & Importance</h2>
@@ -563,18 +607,22 @@
 
         let leaderboardData = [];
         let leaderboardSort = 'importance';
+        let timelineData = [];
+        let heatmapData = [];
 
         // Load all data
         async function loadData() {
             try {
-                const [summary, topics, leaderboard, hottest, discussions, wordCloud, engagement] = await Promise.all([
+                const [summary, topics, leaderboard, hottest, discussions, wordCloud, engagement, timeline, heatmap] = await Promise.all([
                     fetch('summary_stats.json').then(r => r.json()).catch(() => ({})),
                     fetch('topic_data.json').then(r => r.json()).catch(() => []),
                     fetch('leaderboard_data.json').then(r => r.json()).catch(() => []),
                     fetch('hottest_posts_per_topic.json').then(r => r.json()).catch(() => ({})),
                     fetch('discussion_trees.json').then(r => r.json()).catch(() => []),
                     fetch('word_cloud_data.json').then(r => r.json()).catch(() => []),
-                    fetch('engagement_distribution.json').then(r => r.json()).catch(() => [])
+                    fetch('engagement_distribution.json').then(r => r.json()).catch(() => []),
+                    fetch('timeline_data.json').then(r => r.json()).catch(() => []),
+                    fetch('heatmap_data.json').then(r => r.json()).catch(() => [])
                 ]);
 
                 // Update overview
@@ -585,12 +633,16 @@
 
                 // Render tabs
                 leaderboardData = leaderboard || [];
+                timelineData = timeline || [];
+                heatmapData = heatmap || [];
                 renderAreas(hottest);
                 renderPosts(hottest);
                 renderDiscussions(discussions);
                 renderWordCloud(wordCloud);
                 renderEngagementChart(engagement);
                 renderLeaderboard(sortLeaderboard(leaderboardData, leaderboardSort));
+                renderTimeline(timelineData);
+                renderHeatmap(heatmapData);
                 updateTime();
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -713,6 +765,78 @@
             });
             html += '</div>';
             document.getElementById('engagementChartContainer').innerHTML = html;
+        }
+
+        function renderTimeline(data) {
+            const container = document.getElementById('timelineChart');
+            if (!data || !data.length) {
+                container.innerHTML = '<div class="loading">No timeline data yet</div>';
+                return;
+            }
+
+            const width = container.clientWidth;
+            const height = 300;
+            const margin = { top: 10, right: 10, bottom: 30, left: 40 };
+
+            const svg = d3.select(container)
+                .html('')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            const parseDate = d3.timeParse('%Y-%m-%d');
+            const dataset = data.map(d => ({ date: parseDate(d.date), count: d.count }));
+
+            const x = d3.scaleTime()
+                .domain(d3.extent(dataset, d => d.date))
+                .range([margin.left, width - margin.right]);
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(dataset, d => d.count) || 1]).nice()
+                .range([height - margin.bottom, margin.top]);
+
+            const line = d3.line()
+                .x(d => x(d.date))
+                .y(d => y(d.count))
+                .curve(d3.curveMonotoneX);
+
+            svg.append('path')
+                .datum(dataset)
+                .attr('fill', 'none')
+                .attr('stroke', 'var(--accent)')
+                .attr('stroke-width', 2)
+                .attr('d', line);
+
+            svg.append('g')
+                .attr('transform', `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x).ticks(5).tickSizeOuter(0))
+                .selectAll('text')
+                .style('fill', 'var(--muted)');
+
+            svg.append('g')
+                .attr('transform', `translate(${margin.left},0)`)
+                .call(d3.axisLeft(y).ticks(4).tickSizeOuter(0))
+                .selectAll('text')
+                .style('fill', 'var(--muted)');
+        }
+
+        function renderHeatmap(data) {
+            const container = document.getElementById('heatmapContainer');
+            if (!data || !data.length) {
+                container.innerHTML = '<div class="loading">No heatmap data yet</div>';
+                return;
+            }
+
+            const maxVal = Math.max(...data.map(d => d.count));
+            const scale = d3.scaleLinear().domain([0, maxVal || 1]).range([0.08, 1]);
+            const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+            let html = '';
+            data.forEach(cell => {
+                const opacity = scale(cell.count);
+                html += `<div class="heat-cell" data-tooltip="${dayNames[cell.day]} ${cell.hour}:00\n${cell.count} posts" style="background: rgba(255, 107, 61, ${opacity});"></div>`;
+            });
+            container.innerHTML = html;
         }
 
         function renderLeaderboard(leaderboard) {

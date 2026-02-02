@@ -70,13 +70,20 @@
         .section h2 { font-size: 1.6rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
         .section p { color: var(--text-secondary); margin-bottom: 1rem; }
         .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem; box-shadow: 0 12px 26px var(--shadow); }
+        .card.light { background: #f8fafc; color: #0f172a; border: 1px solid #e5e7eb; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25); }
+        .word-card { background: linear-gradient(145deg, #ffffff 0%, #f6f7fb 100%); }
+        .heat-card { background: linear-gradient(140deg, #ffffff 0%, #f4f6fb 100%); }
         .flex { display: flex; gap: 1rem; flex-wrap: wrap; }
-        .word-cloud { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-        .word-item { color: var(--accent); font-weight: 700; white-space: nowrap; letter-spacing: 0.01em; transition: transform 0.15s ease, color 0.15s; }
-        .word-item:hover { transform: translateY(-2px); color: var(--accent-2); }
-        .heatmap { display: grid; grid-template-columns: repeat(24, minmax(10px, 1fr)); gap: 3px; }
-        .heat-cell { width: 100%; padding-top: 100%; position: relative; border-radius: 4px; background: rgba(245,158,11,0.08); }
-        .heat-cell::after { content: attr(data-tip); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--text-primary); opacity: 0.75; }
+        .word-cloud { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: center; }
+        .word-item { color: #1e293b; font-weight: 800; white-space: nowrap; letter-spacing: 0.01em; line-height: 1; display: inline-block; transition: transform 0.15s ease, color 0.15s; }
+        .word-item:hover { transform: translateY(-2px) rotate(0deg); color: #0f172a; }
+        .heatmap { display: grid; grid-template-columns: 72px repeat(24, minmax(10px, 1fr)); grid-template-rows: 36px repeat(7, minmax(14px, 1fr)); gap: 4px; background: #ffffff; padding: 12px; border-radius: 14px; border: 1px solid #e5e7eb; box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16); }
+        .heat-label { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #0f172a; }
+        .heat-axis { color: #475569; font-weight: 700; }
+        .heat-cell { width: 100%; padding-top: 100%; position: relative; border-radius: 6px; background: #e5e7eb; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(15,23,42,0.04); }
+        .heat-value { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #0f172a; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
+        .heat-cell::after { content: attr(data-tip); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #0f172a; opacity: 0; background: rgba(255,255,255,0.14); text-align: center; line-height: 1.2; transition: opacity 0.12s ease; }
+        .heat-cell:hover::after { opacity: 1; }
         .mini { height: 420px; }
         #networkViz svg { width: 100%; height: 100%; }
         .footer { text-align: center; color: var(--text-dim); padding: 2.5rem 1rem; font-size: 0.9rem; }
@@ -114,7 +121,7 @@
         <div class="section">
             <h2>☁️ Topic Word Cloud</h2>
             <p>Size reflects discussion frequency across topics. Larger words = more replies and mentions.</p>
-            <div class="card">
+            <div class="card light word-card">
                 <div class="word-cloud" id="wordCloud"></div>
             </div>
         </div>
@@ -122,7 +129,7 @@
         <div class="section">
             <h2>🔥 Temporal Heatmap</h2>
             <p>Hourly activity across the week. Columns = hours (0-23), rows = Mon→Sun.</p>
-            <div class="card">
+            <div class="card light heat-card">
                 <div class="heatmap" id="heatmap"></div>
             </div>
         </div>
@@ -130,7 +137,7 @@
         <div class="section">
             <h2>🕸️ Interaction Network (snapshot)</h2>
             <p>Force-directed mini graph of top agents. Node size = engagement; edge weight = shared topics.</p>
-            <div class="card mini" id="networkViz"></div>
+            <div class="card light mini" id="networkViz"></div>
         </div>
 
         <div class="footer">
@@ -166,19 +173,37 @@
     function renderWordCloud(data){
         const wrap = document.getElementById('wordCloud');
         if(!data || !data.length){ wrap.innerHTML = '<div style="color: var(--text-secondary)">No data</div>'; return; }
-        wrap.innerHTML = data.map(d=>`<span class="word-item" style="font-size:${Math.max(12,Math.min(48,d.size||16))}px" title="${d.value} mentions">${d.text}</span>`).join(' ');
+        const palette = ['#440154','#46327e','#365c8d','#277f8e','#1fa187','#4ac16d','#a0da39','#f6e832'];
+        wrap.innerHTML = data.map(d=>{
+            const fontSize = Math.max(14, Math.min(62, d.size || d.value || 16));
+            const tilt = (Math.random()*18 - 9).toFixed(1);
+            const color = palette[Math.floor(Math.random()*palette.length)];
+            return `<span class="word-item" style="font-size:${fontSize}px;color:${color};transform:rotate(${tilt}deg);" title="${d.value} mentions">${d.text}</span>`;
+        }).join(' ');
     }
 
     function renderHeatmap(data){
         const wrap = document.getElementById('heatmap');
         if(!data || !data.length){ wrap.innerHTML = '<div style="color: var(--text-secondary)">No data</div>'; return; }
         const maxv = Math.max(...data.map(d=>d.count||0)) || 1;
-        const scale = d3.scaleLinear().domain([0,maxv]).range([0.05,0.95]);
+        const color = d3.scaleSequential().domain([0, maxv]).interpolator(d3.interpolateYlOrRd);
         const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-        wrap.innerHTML = data.map(cell=>{
-            const op = scale(cell.count||0);
-            return `<div class="heat-cell" data-tip="${days[cell.day]} ${cell.hour}:00\n${cell.count||0}" style="background: rgba(245,158,11,${op});"></div>`;
-        }).join('');
+        const header = ['<div class="heat-label"></div>']
+            .concat(Array.from({length:24},(_,h)=>`<div class="heat-label heat-axis">${h}</div>`));
+        const rows = days.flatMap((dayLabel, dayIdx)=>{
+            const rowCells = data
+                .filter(c=>c.day===dayIdx)
+                .sort((a,b)=>a.hour-b.hour)
+                .map(cell=>{
+                    const value = cell.count || 0;
+                    const bg = color(value);
+                    const tooltip = `${dayLabel} ${cell.hour}:00\n${value} events`;
+                    const display = value >= 1000 ? `${Math.round(value/100)/10}k` : value;
+                    return `<div class="heat-cell" title="${tooltip}" data-tip="${tooltip}" style="background:${bg}"><span class="heat-value">${display}</span></div>`;
+                });
+            return [`<div class="heat-label heat-axis">${dayLabel}</div>`, ...rowCells];
+        });
+        wrap.innerHTML = header.concat(rows).join('');
     }
 
     function renderNetwork(graph){
@@ -190,22 +215,33 @@
         const nodes = (graph.nodes||[]).slice(0, 80);
         const nodeIds = new Set(nodes.map(n=>n.id));
         const links = (graph.links||[]).filter(l=>nodeIds.has(l.source)&&nodeIds.has(l.target)).slice(0,200);
-        const size = d3.scaleSqrt().domain([1, d3.max(nodes, d=>d.engagement||1)||1]).range([4,18]);
-        const color = d3.scaleSequential(d3.interpolateCool).domain([0, nodes.length||1]);
+        const size = d3.scaleSqrt().domain([1, d3.max(nodes, d=>d.engagement||1)||1]).range([6,20]);
+        const color = d3.scaleOrdinal(d3.schemeTableau10);
         const sim = d3.forceSimulation(nodes)
-            .force('link', d3.forceLink(links).id(d=>d.id).distance(80).strength(0.6))
-            .force('charge', d3.forceManyBody().strength(-60))
+            .force('link', d3.forceLink(links).id(d=>d.id).distance(90).strength(0.6))
+            .force('charge', d3.forceManyBody().strength(-70))
             .force('center', d3.forceCenter(width/2, height/2));
 
         const link = svg.append('g').selectAll('line').data(links).enter().append('line')
-            .attr('stroke', '#2a3b55').attr('stroke-width', d=>Math.max(1, d.weight||1));
+            .attr('stroke', '#cbd5e1').attr('stroke-opacity', 0.8).attr('stroke-width', d=>Math.max(1, d.weight||1));
         const node = svg.append('g').selectAll('circle').data(nodes).enter().append('circle')
             .attr('r', d=>size(d.engagement||1))
             .attr('fill', (d,i)=>color(i))
-            .attr('stroke', '#0a0a0f').attr('stroke-width', 1.2)
+            .attr('stroke', '#0f172a').attr('stroke-width', 1.2)
             .append('title').text(d=>`${d.name}\nEngagement: ${d.engagement||0}\nTopics: ${d.topics||0}`);
 
         const circles = svg.selectAll('circle');
+        const labels = svg.append('g').selectAll('text').data(nodes).enter().append('text')
+            .text(d=>d.name.length>16 ? d.name.slice(0,16)+'…' : d.name)
+            .attr('font-size', '10px')
+            .attr('font-weight', '700')
+            .attr('fill', '#0f172a')
+            .attr('stroke', '#ffffff')
+            .attr('stroke-width', 0.8)
+            .attr('paint-order', 'stroke')
+            .attr('text-anchor', 'middle')
+            .attr('dy', d=>-(size(d.engagement||1)+4));
+
         sim.on('tick', ()=>{
             link
                 .attr('x1', d=>d.source.x)
@@ -215,6 +251,9 @@
             circles
                 .attr('cx', d=>d.x)
                 .attr('cy', d=>d.y);
+            labels
+                .attr('x', d=>d.x)
+                .attr('y', d=>d.y);
         });
     }
 

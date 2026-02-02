@@ -122,13 +122,8 @@
 
         <div class="section">
             <h2>☁️ Topic Word Cloud</h2>
-            <p>Size reflects discussion frequency across topics. Larger words = more replies and mentions.</p>
+            <p>Size reflects discussion frequency by topic. Larger words = more posts in that topic.</p>
             <div class="card light word-card">
-                <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
-                    <span style="color:var(--text-secondary);font-size:14px;">Source</span>
-                    <button class="pill" data-cloud="topics">Topics</button>
-                    <button class="pill" data-cloud="titles">Titles</button>
-                </div>
                 <div class="word-cloud" id="wordCloud"></div>
             </div>
         </div>
@@ -155,15 +150,14 @@
     <script>
     async function loadData(){
         try {
-            const [summary, wordCloud, titleCloud, heatmap, network] = await Promise.all([
+            const [summary, topics, heatmap, network] = await Promise.all([
                 fetch('data/summary_stats.json').then(r=>r.json()).catch(()=>({})),
-                fetch('data/word_cloud_data.json').then(r=>r.json()).catch(()=>[]),
-                fetch('data/title_word_cloud.json').then(r=>r.json()).catch(()=>[]),
+                fetch('data/topic_data.json').then(r=>r.json()).catch(()=>[]),
                 fetch('data/heatmap_data.json').then(r=>r.json()).catch(()=>[]),
                 fetch('data/network_data.json').then(r=>r.json()).catch(()=>({nodes:[],links:[]}))
             ]);
             renderStats(summary);
-            initWordCloud(wordCloud, titleCloud);
+            renderTopicCloud(topics);
             renderHeatmap(heatmap);
             renderNetwork(network);
             updateTime(summary.crawled_at);
@@ -178,24 +172,23 @@
         document.getElementById('statEngagement').textContent = f(s.total_engagement);
     }
 
-    function initWordCloud(topicData, titleData){
+    function renderTopicCloud(topics){
         const wrap = document.getElementById('wordCloud');
-        const buttons = Array.from(document.querySelectorAll('[data-cloud]'));
-        const sets = { topics: topicData || [], titles: titleData || [] };
-        const render = (key)=>{
-            const data = sets[key] || [];
-            if(!data.length){ wrap.innerHTML = '<div style="color: var(--text-secondary)">No data</div>'; return; }
-            const palette = ['#440154','#46327e','#365c8d','#277f8e','#1fa187','#4ac16d','#a0da39','#f6e832'];
-            wrap.innerHTML = data.map(d=>{
-                const fontSize = Math.max(14, Math.min(62, d.size || d.value || 16));
-                const tilt = (Math.random()*18 - 9).toFixed(1);
-                const color = palette[Math.floor(Math.random()*palette.length)];
-                return `<span class="word-item" style="font-size:${fontSize}px;color:${color};transform:rotate(${tilt}deg);" title="${d.value} mentions">${d.text}</span>`;
-            }).join(' ');
-            buttons.forEach(btn=>btn.classList.toggle('active', btn.dataset.cloud===key));
-        };
-        buttons.forEach(btn=>btn.addEventListener('click', ()=>render(btn.dataset.cloud)));
-        render('topics');
+        if(!topics || !topics.length){
+            wrap.innerHTML = '<div style="color: var(--text-secondary)">No data</div>';
+            return;
+        }
+        const palette = ['#440154','#46327e','#365c8d','#277f8e','#1fa187','#4ac16d','#a0da39','#f6e832'];
+        // Use posts count to size words; clamp for readability
+        wrap.innerHTML = topics.map(t=>{
+            const val = t.posts || t.value || 0;
+            const fontSize = Math.max(14, Math.min(62, Math.log(val + 1) * 8));
+            const tilt = (Math.random()*18 - 9).toFixed(1);
+            const color = palette[Math.floor(Math.random()*palette.length)];
+            const label = t.topic || t.name || '';
+            const tooltip = `${val.toLocaleString()} posts`;
+            return `<span class="word-item" style="font-size:${fontSize}px;color:${color};transform:rotate(${tilt}deg);" title="${tooltip}">${label}</span>`;
+        }).join(' ');
     }
 
     function renderHeatmap(data){

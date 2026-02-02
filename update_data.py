@@ -11,15 +11,26 @@ Runs: Every 5 minutes via cron or systemd timer
 import requests
 import json
 import os
+import re
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 import sys
 
 class FastMoltbookPipeline:
-    def __init__(self, output_dir="/mnt/d/moltbook-graph"):
+    def __init__(self, output_dir=None):
         self.base_url = "https://www.moltbook.com"
-        self.output_dir = output_dir
+        repo_root = os.path.dirname(os.path.abspath(__file__))
+        self.output_dir = output_dir or os.path.join(repo_root, "data")
+        os.makedirs(self.output_dir, exist_ok=True)
+
+        # Allow overriding max post cap (0 = no cap)
+        try:
+            env_max_posts = int(os.getenv("MAX_POSTS", "0"))
+        except ValueError:
+            env_max_posts = 0
+        self.max_posts = env_max_posts if env_max_posts > 0 else None
+
         self.session = requests.Session()
         self.session.timeout = 15
         
@@ -27,9 +38,26 @@ class FastMoltbookPipeline:
         self.posts = []
         self.agents = {}
         self.topics = defaultdict(int)
+        self.topic_engagement = defaultdict(int)
+        self.topic_agents = defaultdict(set)
         self.agent_engagement = defaultdict(int)
         self.agent_topics = defaultdict(set)
         self.connections = {}
+        # Last crawl timestamp for incremental fetch
+        self.last_crawl_dt = None
+        try:
+            history_path = os.path.join(self.output_dir, 'agent_history.json')
+            if os.path.exists(history_path):
+                with open(history_path, 'r') as f:
+                    history = json.load(f)
+                ts = history.get('summary', {}).get('last_crawl')
+                if ts:
+                    dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    self.last_crawl_dt = dt
+        except Exception:
+            self.last_crawl_dt = None
         
     def fetch(self, endpoint, params=None):
         """Fetch from Moltbook API."""
@@ -42,7 +70,7 @@ class FastMoltbookPipeline:
             print(f"❌ API Error ({endpoint}): {e}")
             return None
     
-    def crawl(self, max_posts=5000):
+    def crawl(self, max_posts=None):
         """Fetch and aggregate data from Moltbook API."""
         print("\n🚀 FAST MOLTBOOK PIPELINE")
         print("="*60)
@@ -51,18 +79,42 @@ class FastMoltbookPipeline:
         print("📥 Fetching posts...")
         all_posts = []
         offset = 0
-        max_fetches = (max_posts // 100) + 1  # Limit API calls
         fetches = 0
-        
-        while len(all_posts) < max_posts and fetches < max_fetches:
+        max_posts = max_posts if max_posts is not None else self.max_posts
+
+        while True:
+            if max_posts is not None and len(all_posts) >= max_posts:
+                break
+
             data = self.fetch("/posts", {"offset": offset, "limit": 100})
             if not data or not data.get('success'):
                 break
             
-            posts = data.get('posts', [])
+            posts = data.get('posts') or data.get('data', {}).get('posts', [])
             if not posts:
                 break
-                
+
+            # Incremental: keep only posts newer than last crawl
+            if self.last_crawl_dt:
+                filtered_posts = []
+                for p in posts:
+                    created_str = p.get('created_at') or p.get('created') or ''
+                    try:
+                        created_dt = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
+                        if created_dt.tzinfo is None:
+                            created_dt = created_dt.replace(tzinfo=timezone.utc)
+                    except Exception:
+                        created_dt = None
+                    if created_dt and created_dt <= self.last_crawl_dt:
+                        # Assume API is descending; stop pagination here
+                        posts = None
+                        break
+                    filtered_posts.append(p)
+                if posts is None:
+                    all_posts.extend(filtered_posts)
+                    break
+                posts = filtered_posts
+
             all_posts.extend(posts)
             offset += 100
             fetches += 1
@@ -70,7 +122,7 @@ class FastMoltbookPipeline:
             if len(all_posts) % 500 == 0:
                 print(f"   Fetched {len(all_posts)} posts...")
         
-        print(f"✅ Got {len(all_posts)} posts from API")
+        print(f"✅ Got {len(all_posts)} posts from API" + (" (capped)" if max_posts else ""))
         if len(all_posts) == 0:
             # Avoid wiping data when the API is down; keep previous exports intact
             print("❌ No posts fetched; skipping export to preserve existing data")
@@ -78,8 +130,19 @@ class FastMoltbookPipeline:
         
         # Process posts ONCE - build all data in one pass
         print("🔍 Processing data...")
+        missing_author_posts = []
+
         for post in all_posts:
-            author = post.get('author', {}).get('name', '')
+            if not post:
+                continue
+
+            author_info = post.get('author')
+            author = author_info.get('name') if isinstance(author_info, dict) else None
+
+            # Author is required by API; if missing, skip and log for visibility
+            if not author:
+                missing_author_posts.append(post.get('id'))
+                continue
             submolt_data = post.get('submolt', {})
             # Handle submolt as either dict or string
             submolt = submolt_data.get('name') if isinstance(submolt_data, dict) else str(submolt_data)
@@ -108,6 +171,9 @@ class FastMoltbookPipeline:
             # Track topics (main areas)
             if submolt:
                 self.topics[submolt] += 1
+                self.topic_engagement[submolt] += post_engagement
+                if agent_id:
+                    self.topic_agents[submolt].add(agent_id)
             
             # Store post with engagement metrics
             self.posts.append({
@@ -115,6 +181,7 @@ class FastMoltbookPipeline:
                 'title': post.get('title', ''),
                 'author': author,
                 'submolt': submolt,
+                'tags': [submolt] if submolt else [],
                 'engagement': post_engagement,
                 'comments': comments,
                 'upvotes': upvotes,
@@ -139,6 +206,9 @@ class FastMoltbookPipeline:
                         'count': len(shared)
                     }
         
+        if missing_author_posts:
+            print(f"⚠️  Skipped {len(missing_author_posts)} posts missing required author (samples: {missing_author_posts[:5]})")
+
         print(f"✅ {len(self.agents)} agents, {len(self.topics)} topics")
         return True
     
@@ -147,6 +217,157 @@ class FastMoltbookPipeline:
         path = os.path.join(self.output_dir, filename)
         with open(path, 'w') as f:
             json.dump(data, f, default=str)
+
+    def clean_outputs(self):
+        """Post-process exported JSONs to normalize fields for the front-end."""
+        def load_json(name, default):
+            try:
+                with open(os.path.join(self.output_dir, name), 'r') as f:
+                    return json.load(f)
+            except Exception:
+                return default
+
+        # connections_data.json: ensure fields and sample_topics
+        connections = load_json('connections_data.json', [])
+        cleaned_connections = []
+        for c in connections:
+            a1 = c.get('agent1') or (c.get('agents') or [None, None])[0]
+            a2 = c.get('agent2') or (c.get('agents') or [None, None])[1]
+            if not a1 or not a2:
+                continue
+            shared = c.get('shared_topics') or c.get('shared') or []
+            if not isinstance(shared, list):
+                shared = [shared] if shared else []
+            sample = shared[:4]
+            count = c.get('count') or c.get('weight') or len(shared) or 0
+            cleaned_connections.append({
+                'agent1': a1,
+                'agent2': a2,
+                'shared_topics': shared,
+                'count': int(count),
+                'sample_topics': sample
+            })
+        self.save_json('connections_data.json', cleaned_connections)
+
+        # timeline_data.json: sort by date and keep {date, count}
+        timeline = load_json('timeline_data.json', [])
+        cleaned_timeline = []
+        for row in timeline:
+            date = row.get('date') or row.get('time')
+            count = row.get('count', 0)
+            if date:
+                cleaned_timeline.append({'date': date, 'count': int(count)})
+        cleaned_timeline.sort(key=lambda r: r['date'])
+        self.save_json('timeline_data.json', cleaned_timeline)
+
+        # agent_history_viz.json: ensure posts field exists
+        hist = load_json('agent_history_viz.json', [])
+        cleaned_hist = []
+        for row in hist:
+            ts = row.get('timestamp') or row.get('time')
+            agents = int(row.get('agents', 0))
+            posts = int(row.get('posts', 0)) if 'posts' in row else 0
+            if agents <= 0 or posts <= 0 or not ts:
+                continue  # Drop zero/empty samples that break growth trend
+            cleaned_hist.append({'timestamp': ts, 'agents': agents, 'posts': posts})
+
+        # Drop partial runs: keep only entries near the max posts observed
+        if cleaned_hist:
+            max_posts = max(r['posts'] for r in cleaned_hist)
+            threshold = max_posts * 0.8  # keep runs with >=80% of max posts
+            cleaned_hist = [r for r in cleaned_hist if r['posts'] >= threshold]
+
+        # Sort by timestamp string; if ISO this is stable
+        cleaned_hist.sort(key=lambda r: r['timestamp'])
+        self.save_json('agent_history_viz.json', cleaned_hist)
+
+        # heatmap_data.json: ensure full 7x24 grid
+        heatmap = load_json('heatmap_data.json', [])
+        grid = {(cell.get('day'), cell.get('hour')): cell.get('count', 0) for cell in heatmap}
+        full = []
+        for d in range(7):
+            for h in range(24):
+                full.append({'day': d, 'hour': h, 'count': int(grid.get((d, h), 0))})
+        self.save_json('heatmap_data.json', full)
+
+        # summary_stats.json: coerce numeric fields and keep required keys
+        summary = load_json('summary_stats.json', {})
+        for key in ['total_agents', 'total_topics', 'total_posts', 'total_connections', 'total_engagement']:
+            summary[key] = int(summary.get(key, 0))
+        self.save_json('summary_stats.json', summary)
+
+        # leaderboard_data.json: enforce numeric metrics and non-empty names
+        leaderboard = load_json('leaderboard_data.json', [])
+        cleaned_lb = []
+        for row in leaderboard:
+            name = row.get('name') or row.get('agent')
+            if not name:
+                continue
+            cleaned_lb.append({
+                'rank': int(row.get('rank', len(cleaned_lb) + 1)),
+                'name': name,
+                'engagement': int(row.get('engagement', 0)),
+                'posts': int(row.get('posts', 0)),
+                'topics': int(row.get('topics', 0)),
+                'importance': float(row.get('importance', 0.0))
+            })
+        self.save_json('leaderboard_data.json', cleaned_lb[:50])
+
+        # topic_network_data.json: ensure weights and drop zero-weight links
+        topic_net = load_json('topic_network_data.json', {'nodes': [], 'links': []})
+        cleaned_nodes = []
+        for n in topic_net.get('nodes', []):
+            nid = n.get('id') or n.get('topic')
+            if not nid or str(nid).lower() == 'general':
+                continue  # Drop generic bucket entirely
+            n['id'] = nid
+            n['posts'] = int(n.get('posts', 0))
+            n['engagement'] = int(n.get('engagement', 0))
+            n['agents'] = int(n.get('agents', 0))
+            cleaned_nodes.append(n)
+        valid_topics = {n['id'] for n in cleaned_nodes}
+        cleaned_links = []
+        for l in topic_net.get('links', []):
+            src = l.get('source')
+            tgt = l.get('target')
+            if src not in valid_topics or tgt not in valid_topics:
+                continue
+            w = l.get('weight') or l.get('shared_agents') or l.get('value') or 0
+            if w:
+                cleaned_links.append({
+                    'source': src,
+                    'target': tgt,
+                    'weight': int(w),
+                    'shared_agents': int(w)
+                })
+        topic_net['nodes'] = cleaned_nodes
+        topic_net['links'] = cleaned_links
+        self.save_json('topic_network_data.json', topic_net)
+
+        # topic_data.json: keep required fields and aliases
+        topics = load_json('topic_data.json', [])
+        cleaned_topics = []
+        for t in topics:
+            name = t.get('topic') or t.get('name')
+            if not name or str(name).lower() == 'general':
+                continue  # Drop generic bucket entirely
+            cleaned_topics.append({
+                'topic': name,
+                'name': name,
+                'posts': int(t.get('posts', t.get('value', 0))),
+                'value': int(t.get('posts', t.get('value', 0))),
+                'engagement': int(t.get('engagement', 0)),
+                'agents': int(t.get('agents', 0)),
+                'hot': bool(t.get('hot', False)),
+                'size': int(t.get('size', 0) or 0),
+                'submolts': t.get('submolts', 1)
+            })
+        self.save_json('topic_data.json', cleaned_topics)
+
+        # word_cloud_data.json: drop generic bucket if present
+        word_cloud = load_json('word_cloud_data.json', [])
+        cleaned_wc = [w for w in word_cloud if str(w.get('text', '')).lower() != 'general']
+        self.save_json('word_cloud_data.json', cleaned_wc)
     
     def build_discussion_trees(self):
         """Fetch comment/reply trees for top posts (limited for performance)."""
@@ -274,14 +495,63 @@ class FastMoltbookPipeline:
         self.save_json('network_data.json', {'nodes': nodes, 'links': links})
         print(f"   ✓ network_data.json ({len(nodes)} nodes, {len(links)} links)")
         
-        # 2. Topic data (top 100)
-        top_topics = sorted(self.topics.items(), key=lambda x: x[1], reverse=True)[:100]
-        topics_data = [
-            {'name': t, 'value': c, 'size': max(5, c // 3)}
-            for t, c in top_topics
-        ]
+        # 2. Topic data (top 100 with engagement + agent counts) — exclude the generic "general" bucket
+        top_topics_all = sorted(self.topics.items(), key=lambda x: x[1], reverse=True)
+        top_topics = [(t, c) for t, c in top_topics_all if t != 'general'][:100]
+        topics_data = []
+        for topic, count in top_topics:
+            engagement = self.topic_engagement.get(topic, 0)
+            agents = len(self.topic_agents.get(topic, []))
+            topics_data.append({
+                'topic': topic,
+                'name': topic,           # backward compatible key
+                'posts': count,
+                'value': count,          # backward compatible key
+                'engagement': engagement,
+                'agents': agents,
+                'size': max(6, int(math.sqrt(count)) * 2 + 2),
+                'hot': engagement >= 50 or count >= 75,
+                'submolts': 1
+            })
         self.save_json('topic_data.json', topics_data)
         print(f"   ✓ topic_data.json ({len(topics_data)} topics)")
+
+        # 2a. Topic network (top 80 topics, edges = shared participating agents)
+        top_topic_ids = [t for t, _ in top_topics[:80]]
+        topic_nodes = []
+        for topic in top_topic_ids:
+            posts = self.topics.get(topic, 0)
+            engagement = self.topic_engagement.get(topic, 0)
+            agents = len(self.topic_agents.get(topic, []))
+            topic_nodes.append({
+                'id': topic,
+                'topic': topic,
+                'posts': posts,
+                'engagement': engagement,
+                'agents': agents,
+                'value': posts,
+                'hot': engagement >= 50 or posts >= 75,
+                'size': max(5, int(math.sqrt(posts)) * 2 + 2)
+            })
+
+        topic_agent_map = {t: self.topic_agents.get(t, set()) for t in top_topic_ids}
+        topic_links = []
+        for i, t1 in enumerate(top_topic_ids):
+            agents1 = topic_agent_map[t1]
+            for t2 in top_topic_ids[i+1:]:
+                shared_agents = agents1 & topic_agent_map[t2]
+                shared_count = len(shared_agents)
+                if shared_count >= 1:
+                    topic_links.append({
+                        'source': t1,
+                        'target': t2,
+                        'weight': shared_count,
+                        'shared_agents': shared_count
+                    })
+
+        topic_links = sorted(topic_links, key=lambda l: l['weight'], reverse=True)[:1500]
+        self.save_json('topic_network_data.json', {'nodes': topic_nodes, 'links': topic_links})
+        print(f"   ✓ topic_network_data.json ({len(topic_nodes)} topics, {len(topic_links)} links)")
         
         # 3. Leaderboard (top 50 by importance)
         leaderboard = [
@@ -320,10 +590,69 @@ class FastMoltbookPipeline:
             'total_posts': len(self.posts),
             'total_connections': len(self.connections),
             'total_engagement': sum(a['engagement'] for a in self.agents.values()),
-            'crawled_at': datetime.utcnow().isoformat()
+            'crawled_at': datetime.now(timezone.utc).isoformat()
         }
         self.save_json('summary_stats.json', summary)
         print(f"   ✓ summary_stats.json")
+
+        # 5a. API stats snapshot and parity check
+        api_stats = self.fetch('/stats')
+        if api_stats:
+            self.save_json('api_stats.json', api_stats)
+
+            # Optional parity comparison against pipeline counts
+            parity = {
+                'pipeline': {
+                    'posts': len(self.posts),
+                    'agents': len(self.agents),
+                    'topics': len(self.topics)
+                },
+                'api_stats': {
+                    'posts': api_stats.get('posts'),
+                    'agents': api_stats.get('agents'),
+                    'topics': api_stats.get('submolts')
+                },
+                'delta': {}
+            }
+
+            for key, api_key in [('posts', 'posts'), ('agents', 'agents'), ('topics', 'submolts')]:
+                p_val = parity['pipeline'][key]
+                a_val = parity['api_stats'].get(api_key)
+                if isinstance(a_val, (int, float)):
+                    parity['delta'][key] = p_val - a_val
+
+            self.save_json('api_stats_parity.json', parity)
+            print(f"   ✓ api_stats.json + api_stats_parity.json")
+        else:
+            print("   ⚠️  /api/v1/stats unavailable; skipped api_stats.json")
+
+        # 5b. Agent posting stats (for visualization of active vs total agents)
+        active_agents = len(self.agents)
+        agents_with_engagement = sum(1 for a in self.agents.values() if a['engagement'] > 0)
+        total_posts = len(self.posts)
+        avg_posts_per_agent = total_posts / active_agents if active_agents else 0
+        top_posters = sorted(
+            [(k, v) for k, v in self.agents.items()],
+            key=lambda x: x[1]['posts'],
+            reverse=True
+        )[:20]
+        agent_posting_stats = {
+            'total_agents': active_agents,
+            'agents_with_engagement': agents_with_engagement,
+            'total_posts': total_posts,
+            'avg_posts_per_agent': avg_posts_per_agent,
+            'top_posters': [
+                {
+                    'name': data['name'],
+                    'posts': data['posts'],
+                    'engagement': data['engagement'],
+                    'topics': len(self.agent_topics[aid])
+                }
+                for aid, data in top_posters
+            ]
+        }
+        self.save_json('agent_posting_stats.json', agent_posting_stats)
+        print(f"   ✓ agent_posting_stats.json")
         
         # 6. Agent history (track growth)
         history_file = os.path.join(self.output_dir, 'agent_history.json')
@@ -334,7 +663,7 @@ class FastMoltbookPipeline:
             history = {'crawls': [], 'summary': {}}
         
         crawl_entry = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'total_agents': len(self.agents),
             'total_posts': len(self.posts),
             'total_topics': len(self.topics),
@@ -355,6 +684,9 @@ class FastMoltbookPipeline:
         # 7. Growth trend (for visualization)
         growth = [{'timestamp': c['timestamp'], 'agents': c['total_agents']}
                  for c in history['crawls']]
+        # Include posts to support dual-line growth chart
+        for i, c in enumerate(history['crawls']):
+            growth[i]['posts'] = c.get('total_posts', 0)
         self.save_json('agent_history_viz.json', growth)
         
         # 8. Timeline (dates with activity)
@@ -415,6 +747,33 @@ class FastMoltbookPipeline:
         
         self.save_json('hottest_posts_per_topic.json', hottest_per_topic)
         print(f"   ✓ hottest_posts_per_topic.json ({len(hottest_per_topic)} topics)")
+
+        # 10b. Title word cloud (top 100 words weighted by engagement)
+        title_word_counts = defaultdict(float)
+        stopwords = {
+            'the','and','for','with','this','that','from','just','into','your','you','are','our','has','have','was','were','but','not','out','all','any','can','will','about','what','when','how','why','who','their','they','them','his','her','its','its','on','in','of','to','a','an','is','it','at','by','as','be','or','if','do','did','done','so','we','us','my','me','up','down','over','under','new','more','less'
+        }
+        for post in self.posts:
+            title = post.get('title') or ''
+            engagement = post.get('engagement', 0) or 0
+            weight = max(1, engagement)
+            for token in re.findall(r"[A-Za-z0-9']+", title):
+                word = token.lower()
+                if len(word) < 3 or word in stopwords:
+                    continue
+                title_word_counts[word] += weight
+
+        top_title_words = sorted(title_word_counts.items(), key=lambda x: x[1], reverse=True)[:100]
+        title_word_cloud = [
+            {
+                'text': w,
+                'value': v,
+                'size': max(12, min(72, math.log(v + 1) * 8))
+            }
+            for w, v in top_title_words
+        ]
+        self.save_json('title_word_cloud.json', title_word_cloud)
+        print(f"   ✓ title_word_cloud.json ({len(title_word_cloud)} words)")
         
         # 11. Discussion trees (comments + replies for top posts)
         discussion_trees = self.build_discussion_trees()
@@ -423,13 +782,14 @@ class FastMoltbookPipeline:
         
         # 12. Word cloud data (topic frequency for visualization)
         import math
+        filtered_topics = [(t, c) for t, c in top_topics if t != 'general']
         word_cloud = [
             {
                 'text': t,
                 'value': c,
                 'size': max(12, min(72, math.log(c + 1) * 8))  # Font size based on frequency
             }
-            for t, c in top_topics[:50]  # Top 50 topics
+            for t, c in filtered_topics[:50]  # Top 50 topics excluding the general bucket
         ]
         self.save_json('word_cloud_data.json', word_cloud)
         print(f"   ✓ word_cloud_data.json ({len(word_cloud)} topics)")
@@ -459,6 +819,9 @@ class FastMoltbookPipeline:
         
         self.save_json('engagement_distribution.json', engagement_histogram)
         print(f"   ✓ engagement_distribution.json (distribution across {len(self.agents)} agents)")
+
+        # Final cleanup pass for front-end stability
+        self.clean_outputs()
         
         return True
     
@@ -477,7 +840,7 @@ class FastMoltbookPipeline:
             )
             
             # Commit with timestamp
-            commit_msg = f"🤖 Auto-update: {datetime.utcnow().isoformat()}"
+            commit_msg = f"🤖 Auto-update: {datetime.now(timezone.utc).isoformat()}"
             result = subprocess.run(
                 ['git', 'commit', '-m', commit_msg],
                 capture_output=True,
@@ -513,6 +876,18 @@ class FastMoltbookPipeline:
     def run(self):
         """Run the complete pipeline."""
         try:
+            clean_only = os.getenv("CLEAN_ONLY", "0").lower() in {"1", "true", "yes"}
+            if clean_only:
+                print("   ℹ️  CLEAN_ONLY set: skipping crawl/export; running cleaners on existing outputs")
+                self.clean_outputs()
+                print("   ✓ Cleaning complete")
+                return True
+
+            # Allow a full refresh override (ignore incremental cutoff and caps)
+            if os.getenv("FULL_RUN", "0").lower() in {"1", "true", "yes"}:
+                self.last_crawl_dt = None
+                self.max_posts = None
+                print("   ℹ️  FULL_RUN enabled: ignoring last crawl cutoff and post cap")
             # Crawl
             if not self.crawl():
                 return False
@@ -521,9 +896,13 @@ class FastMoltbookPipeline:
             if not self.export_all():
                 return False
             
-            # Push to GitHub
-            if not self.git_commit_and_push():
-                print("   ⚠️  Warning: Git push failed, but JSON files were generated")
+            # Push to GitHub (unless explicitly skipped)
+            skip_git = os.getenv("SKIP_GIT", "0").lower() in {"1", "true", "yes"}
+            if skip_git:
+                print("   ℹ️  SKIP_GIT set; skipping git commit/push")
+            else:
+                if not self.git_commit_and_push():
+                    print("   ⚠️  Warning: Git push failed, but JSON files were generated")
             
             print("\n" + "="*60)
             print("✅ PIPELINE COMPLETE - Data is live on GitHub Pages!")

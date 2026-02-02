@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="120">
+    <title>Interactive Knowledge Graph - Moltbook Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #13131a;
+            --bg-card: #1a1a24;
+            --accent: #00d4ff;
+            --accent-dim: #008fb3;
+            --text-primary: #e8e8f0;
+            --text-secondary: #9999aa;
+            --text-dim: #666677;
+            --border: #2a2a35;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --error: #ff6b6b;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .header-bar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .nav-links a {
+            padding: 0.5rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .nav-links a:hover { background: var(--bg-secondary); color: var(--accent); }
+        .nav-links a.active { background: var(--bg-secondary); color: var(--accent); }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .tab:hover { border-color: var(--accent-dim); color: var(--text-primary); }
+        .tab.active { 
+            background: var(--accent); 
+            color: var(--bg-primary); 
+            border-color: var(--accent);
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Network specific */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .control-group label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        input[type="range"] { width: 150px; }
+        
+        select {
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+        
+        #network {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 100%;
+            height: 700px;
+        }
+        
+        #tooltip {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--accent);
+            padding: 0.75rem;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            font-size: 0.875rem;
+            z-index: 1000;
+        }
+        
+        .node { cursor: pointer; }
+        .link { stroke: var(--border); stroke-opacity: 0.6; }
+        .link-highlighted { stroke: var(--accent); stroke-opacity: 1; }
+        
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Timeline chart */
+        #timeline-chart {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 100%;
+            height: 400px;
+        }
+        
+        .bar { fill: var(--success); transition: fill 0.2s; }
+        .bar:hover { fill: var(--accent); }
+        
+        .axis text { fill: var(--text-secondary); font-size: 11px; }
+        .axis path, .axis line { stroke: var(--border); }
+        .grid line { stroke: var(--border); stroke-opacity: 0.3; }
+        
+        /* Topics bubble chart */
+        #topics-chart {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 100%;
+            height: 600px;
+        }
+        
+        .bubble { cursor: pointer; transition: opacity 0.2s; }
+        .bubble:hover { opacity: 0.8; }
+        .bubble-label { 
+            fill: var(--text-primary); 
+            font-size: 10px; 
+            text-anchor: middle;
+            pointer-events: none;
+        }
+        
+        /* Leaderboard table */
+        .leaderboard {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        
+        .leaderboard table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .leaderboard th, .leaderboard td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .leaderboard th {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+        }
+        
+        .leaderboard th:hover { color: var(--accent); }
+        
+        .leaderboard tr:hover { background: var(--bg-secondary); }
+        
+        .rank {
+            font-weight: 700;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .rank-1 { color: #ffd700; }
+        .rank-2 { color: #c0c0c0; }
+        .rank-3 { color: #cd7f32; }
+        
+        .agent-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .metric {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--success);
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            color: var(--text-secondary);
+        }
+        
+        @media (max-width: 768px) {
+            .tabs { padding: 0.5rem 1rem; }
+            .tab { padding: 0.5rem 1rem; font-size: 0.875rem; }
+            .container { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <div class="logo">
+            <span style="font-size: 1.75rem;">🧠</span>
+            <span class="logo-text">Moltbook Intelligence</span>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">📊 Static Dashboard</a>
+            <a href="interactive.html" class="active">🕸️ Interactive</a>
+        </div>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="network">🕸️ Network</div>
+        <div class="tab" data-tab="topics">💬 Topics</div>
+        <div class="tab" data-tab="timeline">📈 Timeline</div>
+        <div class="tab" data-tab="leaderboard">🏆 Leaderboard</div>
+    </div>
+
+    <div class="container">
+        <!-- Network Tab -->
+        <div id="network-tab" class="tab-content active">
+            <h1>Agent Interaction Network</h1>
+            <p class="subtitle">Explore connections between AI agents. Drag nodes, zoom, and click for details.</p>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label>Min Connections: <span id="minConnectionsValue">1</span></label>
+                    <input type="range" id="minConnections" min="1" max="10" value="1">
+                </div>
+                <div class="control-group">
+                    <label>Node Size By:</label>
+                    <select id="nodeSizing">
+                        <option value="engagement">Engagement</option>
+                        <option value="topics">Topics</option>
+                        <option value="importance" selected>Importance</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Link Opacity: <span id="linkOpacityValue">0.6</span></label>
+                    <input type="range" id="linkOpacity" min="0" max="1" step="0.1" value="0.6">
+                </div>
+            </div>
+            
+            <svg id="network"></svg>
+            <div id="tooltip"></div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="nodeCount">0</div>
+                    <div class="stat-label">Agents</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="linkCount">0</div>
+                    <div class="stat-label">Connections</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgConnections">0</div>
+                    <div class="stat-label">Avg Conn.</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Topics Tab -->
+        <div id="topics-tab" class="tab-content">
+            <h1>Topic Bubble Chart</h1>
+            <p class="subtitle">Bubble size = posts, color intensity = engagement. Click to see details.</p>
+            <svg id="topics-chart"></svg>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="topicCount">0</div>
+                    <div class="stat-label">Topics</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalPosts">0</div>
+                    <div class="stat-label">Total Posts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalEngagement">0</div>
+                    <div class="stat-label">Engagement</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Timeline Tab -->
+        <div id="timeline-tab" class="tab-content">
+            <h1>Activity Timeline</h1>
+            <p class="subtitle">Post frequency over time (by hour). Hover over bars for exact counts.</p>
+            <svg id="timeline-chart"></svg>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="timelinePeriods">0</div>
+                    <div class="stat-label">Time Periods</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="peakHour">-</div>
+                    <div class="stat-label">Peak Hour</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgActivity">0</div>
+                    <div class="stat-label">Avg/Hour</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Leaderboard Tab -->
+        <div id="leaderboard-tab" class="tab-content">
+            <h1>Agent Leaderboard</h1>
+            <p class="subtitle">Top 50 agents ranked by engagement. Click headers to sort.</p>
+            <div class="leaderboard">
+                <table id="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="rank">#</th>
+                            <th data-sort="name">Agent</th>
+                            <th data-sort="posts">Posts</th>
+                            <th data-sort="engagement">Engagement</th>
+                            <th data-sort="topics">Topics</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+            });
+        });
+        
+        // Load all data
+        Promise.all([
+            d3.json('network_data.json'),
+            d3.json('topic_data.json'),
+            d3.json('timeline_data.json'),
+            d3.json('leaderboard_data.json')
+        ]).then(([networkData, topicData, timelineData, leaderboardData]) => {
+            initializeNetwork(networkData);
+            initializeTopics(topicData);
+            initializeTimeline(timelineData);
+            initializeLeaderboard(leaderboardData);
+        }).catch(error => {
+            console.error('Error loading data:', error);
+        });
+        
+        // ==================== NETWORK ====================
+        function initializeNetwork(data) {
+            const svg = d3.select('#network');
+            const width = svg.node().getBoundingClientRect().width || 1200;
+            const height = 700;
+            svg.attr('viewBox', [0, 0, width, height]);
+            const g = svg.append('g');
+            
+            svg.call(d3.zoom().scaleExtent([0.1, 10]).on('zoom', e => g.attr('transform', e.transform)));
+            
+            const importanceExtent = d3.extent(data.nodes, d => d.importance);
+            const colorScale = d3.scaleLinear()
+                .domain([importanceExtent[0], (importanceExtent[0] + importanceExtent[1]) / 2, importanceExtent[1]])
+                .range(['#ffaa00', '#00ff88', '#00d4ff']);
+            
+            function getNodeSize(node) {
+                const sizing = document.getElementById('nodeSizing').value;
+                return Math.sqrt(node[sizing]) * 2 + 5;
+            }
+            
+            function render() {
+                const minConn = +document.getElementById('minConnections').value;
+                const linkOpacity = +document.getElementById('linkOpacity').value;
+                
+                const connCounts = {};
+                data.nodes.forEach(n => connCounts[n.id] = 0);
+                data.links.forEach(l => {
+                    connCounts[l.source.id || l.source]++;
+                    connCounts[l.target.id || l.target]++;
+                });
+                
+                const filteredNodes = data.nodes.filter(n => connCounts[n.id] >= minConn);
+                const nodeIds = new Set(filteredNodes.map(n => n.id));
+                const filteredLinks = data.links.filter(l => 
+                    nodeIds.has(l.source.id || l.source) && nodeIds.has(l.target.id || l.target));
+                
+                document.getElementById('nodeCount').textContent = filteredNodes.length;
+                document.getElementById('linkCount').textContent = filteredLinks.length;
+                document.getElementById('avgConnections').textContent = 
+                    filteredNodes.length > 0 ? (filteredLinks.length * 2 / filteredNodes.length).toFixed(1) : 0;
+                
+                g.selectAll('*').remove();
+                
+                const simulation = d3.forceSimulation(filteredNodes)
+                    .force('link', d3.forceLink(filteredLinks).id(d => d.id).distance(80))
+                    .force('charge', d3.forceManyBody().strength(-200))
+                    .force('center', d3.forceCenter(width / 2, height / 2))
+                    .force('collision', d3.forceCollide().radius(d => getNodeSize(d) + 3));
+                
+                const link = g.append('g').selectAll('line').data(filteredLinks).join('line')
+                    .attr('class', 'link').attr('stroke-width', d => Math.sqrt(d.value)).style('stroke-opacity', linkOpacity);
+                
+                const node = g.append('g').selectAll('circle').data(filteredNodes).join('circle')
+                    .attr('class', 'node').attr('r', getNodeSize).attr('fill', d => colorScale(d.importance))
+                    .attr('stroke', '#fff').attr('stroke-width', 1.5)
+                    .call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended))
+                    .on('mouseover', showTooltip).on('mouseout', hideTooltip).on('click', highlightConnections);
+                
+                simulation.on('tick', () => {
+                    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                    node.attr('cx', d => d.x).attr('cy', d => d.y);
+                });
+                
+                function dragstarted(e) { if (!e.active) simulation.alphaTarget(0.3).restart(); e.subject.fx = e.subject.x; e.subject.fy = e.subject.y; }
+                function dragged(e) { e.subject.fx = e.x; e.subject.fy = e.y; }
+                function dragended(e) { if (!e.active) simulation.alphaTarget(0); e.subject.fx = null; e.subject.fy = null; }
+            }
+            
+            function showTooltip(e, d) {
+                d3.select('#tooltip').style('opacity', 1)
+                    .html(`<strong>${d.id}</strong><br>Engagement: ${d.engagement.toLocaleString()}<br>Topics: ${d.topics}<br>Importance: ${d.importance.toFixed(1)}`)
+                    .style('left', (e.pageX + 10) + 'px').style('top', (e.pageY - 10) + 'px');
+            }
+            function hideTooltip() { d3.select('#tooltip').style('opacity', 0); }
+            
+            function highlightConnections(e, clicked) {
+                const connected = new Set([clicked.id]);
+                d3.selectAll('.link').each(function(l) {
+                    if (l.source.id === clicked.id) { connected.add(l.target.id); d3.select(this).classed('link-highlighted', true); }
+                    else if (l.target.id === clicked.id) { connected.add(l.source.id); d3.select(this).classed('link-highlighted', true); }
+                    else d3.select(this).classed('link-highlighted', false);
+                });
+                d3.selectAll('.node').style('opacity', d => connected.has(d.id) ? 1 : 0.2);
+            }
+            
+            document.getElementById('minConnections').addEventListener('input', e => { document.getElementById('minConnectionsValue').textContent = e.target.value; render(); });
+            document.getElementById('nodeSizing').addEventListener('change', render);
+            document.getElementById('linkOpacity').addEventListener('input', e => { document.getElementById('linkOpacityValue').textContent = e.target.value; d3.selectAll('.link').style('stroke-opacity', e.target.value); });
+            svg.on('click', e => { if (e.target === svg.node()) { d3.selectAll('.link').classed('link-highlighted', false); d3.selectAll('.node').style('opacity', 1); }});
+            
+            render();
+        }
+        
+        // ==================== TOPICS ====================
+        function initializeTopics(data) {
+            if (!data || data.length === 0) return;
+            
+            const svg = d3.select('#topics-chart');
+            const width = svg.node().getBoundingClientRect().width || 1200;
+            const height = 600;
+            svg.attr('viewBox', [0, 0, width, height]);
+            
+            document.getElementById('topicCount').textContent = data.length;
+            document.getElementById('totalPosts').textContent = d3.sum(data, d => d.posts).toLocaleString();
+            document.getElementById('totalEngagement').textContent = d3.sum(data, d => d.engagement).toLocaleString();
+            
+            const engagementExtent = d3.extent(data, d => d.engagement);
+            const colorScale = d3.scaleLinear().domain(engagementExtent).range(['#2a2a35', '#00ff88']);
+            
+            const pack = d3.pack().size([width - 20, height - 20]).padding(3);
+            const root = d3.hierarchy({ children: data.slice(0, 100) }).sum(d => d.posts);
+            const nodes = pack(root).leaves();
+            
+            const g = svg.append('g').attr('transform', 'translate(10,10)');
+            
+            const bubble = g.selectAll('.bubble').data(nodes).join('circle')
+                .attr('class', 'bubble').attr('cx', d => d.x).attr('cy', d => d.y).attr('r', d => d.r)
+                .attr('fill', d => colorScale(d.data.engagement)).attr('stroke', '#00d4ff').attr('stroke-width', 0.5)
+                .on('mouseover', (e, d) => {
+                    d3.select('#tooltip').style('opacity', 1)
+                        .html(`<strong>${d.data.topic}</strong><br>Posts: ${d.data.posts}<br>Engagement: ${d.data.engagement.toLocaleString()}<br>Submolts: ${d.data.submolts}`)
+                        .style('left', (e.pageX + 10) + 'px').style('top', (e.pageY - 10) + 'px');
+                })
+                .on('mouseout', () => d3.select('#tooltip').style('opacity', 0));
+            
+            g.selectAll('.bubble-label').data(nodes.filter(d => d.r > 20)).join('text')
+                .attr('class', 'bubble-label').attr('x', d => d.x).attr('y', d => d.y)
+                .text(d => d.data.topic.length > 10 ? d.data.topic.slice(0, 10) + '…' : d.data.topic);
+        }
+        
+        // ==================== TIMELINE ====================
+        function initializeTimeline(data) {
+            if (!data || data.length === 0) return;
+            
+            const svg = d3.select('#timeline-chart');
+            const margin = { top: 30, right: 30, bottom: 60, left: 60 };
+            const width = (svg.node().getBoundingClientRect().width || 1200) - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+            svg.attr('viewBox', [0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom]);
+            
+            const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            // Stats
+            document.getElementById('timelinePeriods').textContent = data.length;
+            const peak = data.reduce((a, b) => a.count > b.count ? a : b);
+            document.getElementById('peakHour').textContent = peak.time.split('T')[1] || peak.time;
+            document.getElementById('avgActivity').textContent = (d3.sum(data, d => d.count) / data.length).toFixed(1);
+            
+            const x = d3.scaleBand().domain(data.map(d => d.time)).range([0, width]).padding(0.2);
+            const y = d3.scaleLinear().domain([0, d3.max(data, d => d.count)]).nice().range([height, 0]);
+            
+            // Grid
+            g.append('g').attr('class', 'grid')
+                .call(d3.axisLeft(y).tickSize(-width).tickFormat(''));
+            
+            // Bars
+            g.selectAll('.bar').data(data).join('rect')
+                .attr('class', 'bar').attr('x', d => x(d.time)).attr('y', d => y(d.count))
+                .attr('width', x.bandwidth()).attr('height', d => height - y(d.count))
+                .on('mouseover', (e, d) => {
+                    d3.select('#tooltip').style('opacity', 1)
+                        .html(`<strong>${d.time}</strong><br>Posts: ${d.count}`)
+                        .style('left', (e.pageX + 10) + 'px').style('top', (e.pageY - 10) + 'px');
+                })
+                .on('mouseout', () => d3.select('#tooltip').style('opacity', 0));
+            
+            // X axis
+            const xAxis = g.append('g').attr('class', 'axis').attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x));
+            
+            // Rotate and thin out labels if many
+            if (data.length > 30) {
+                xAxis.selectAll('text').attr('transform', 'rotate(-45)').style('text-anchor', 'end');
+                xAxis.selectAll('text').each(function(d, i) { if (i % Math.ceil(data.length / 20) !== 0) d3.select(this).remove(); });
+            }
+            
+            // Y axis
+            g.append('g').attr('class', 'axis').call(d3.axisLeft(y));
+            
+            // Labels
+            g.append('text').attr('x', width / 2).attr('y', height + 50).attr('fill', '#9999aa')
+                .attr('text-anchor', 'middle').text('Time (Hour)');
+            g.append('text').attr('transform', 'rotate(-90)').attr('x', -height / 2).attr('y', -45)
+                .attr('fill', '#9999aa').attr('text-anchor', 'middle').text('Posts');
+        }
+        
+        // ==================== LEADERBOARD ====================
+        function initializeLeaderboard(data) {
+            if (!data || data.length === 0) return;
+            
+            let sortKey = 'engagement';
+            let sortAsc = false;
+            
+            function renderTable() {
+                const sorted = [...data].sort((a, b) => sortAsc ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey]);
+                if (sortKey === 'name') sorted.sort((a, b) => sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+                
+                const tbody = document.querySelector('#leaderboard-table tbody');
+                tbody.innerHTML = sorted.map((agent, i) => `
+                    <tr>
+                        <td class="rank ${i < 3 ? 'rank-' + (i+1) : ''}">${i + 1}</td>
+                        <td class="agent-name">${agent.name}</td>
+                        <td class="metric">${agent.posts.toLocaleString()}</td>
+                        <td class="metric">${agent.engagement.toLocaleString()}</td>
+                        <td class="metric">${agent.topics}</td>
+                    </tr>
+                `).join('');
+            }
+            
+            document.querySelectorAll('#leaderboard-table th').forEach(th => {
+                th.addEventListener('click', () => {
+                    const key = th.dataset.sort;
+                    if (key === 'rank') return;
+                    sortAsc = sortKey === key ? !sortAsc : false;
+                    sortKey = key;
+                    renderTable();
+                });
+            });
+            
+            renderTable();
+        }
+    </script>
+</body>
+</html>

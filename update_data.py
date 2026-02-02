@@ -80,13 +80,18 @@ class FastMoltbookPipeline:
             # Handle submolt as either dict or string
             submolt = submolt_data.get('name') if isinstance(submolt_data, dict) else str(submolt_data)
             submolt = submolt or 'General'
-            engagement = post.get('likes', 0) + post.get('replies', 0)
+            
+            # Calculate engagement (likes + replies + comments)
+            engagement = (post.get('likes', 0) + 
+                         post.get('replies', 0) + 
+                         post.get('comments', 0) +
+                         post.get('shares', 0) * 2)  # Weight shares higher
             
             if author:
                 # Track agent data
                 agent_id = author.lower()
                 if agent_id not in self.agents:
-                    self.agents[agent_id] = {'name': author, 'posts': 0, 'engagement': 0}
+                    self.agents[agent_id] = {'name': author, 'posts': 0, 'engagement': 0, 'topics': 0}
                 
                 self.agents[agent_id]['posts'] += 1
                 self.agents[agent_id]['engagement'] += engagement
@@ -138,10 +143,24 @@ class FastMoltbookPipeline:
         """Export all JSON files."""
         print("💾 Exporting JSON files...")
         
+        # Calculate importance score for each agent
+        # Importance = engagement × log(topic_diversity) × post_frequency
+        import math
+        
+        agent_importance = {}
+        for agent_id, agent_data in self.agents.items():
+            topic_diversity = len(self.agent_topics[agent_id])
+            post_freq = agent_data['posts']
+            engagement = agent_data['engagement']
+            
+            # Importance formula: engagement weighted by topic diversity and activity
+            importance = (engagement + 1) * math.log(max(2, topic_diversity)) * math.log(max(2, post_freq))
+            agent_importance[agent_id] = importance
+        
         # 1. Network data (top 200 agents + connections)
         top_agents = sorted(
             [(k, v) for k, v in self.agents.items()],
-            key=lambda x: x[1]['engagement'],
+            key=lambda x: agent_importance.get(x[0], 0),
             reverse=True
         )[:200]
         
@@ -151,7 +170,10 @@ class FastMoltbookPipeline:
                 'name': data['name'],
                 'posts': data['posts'],
                 'engagement': data['engagement'],
-                'size': max(3, data['engagement'] // 5)
+                'importance': agent_importance.get(aid, 0),
+                'topics': len(self.agent_topics[aid]),
+                'size': max(3, data['engagement'] // 5),
+                'value': data['engagement'] + len(self.agent_topics[aid]) * 10  # For sizing alternatives
             }
             for aid, data in top_agents
         ]
@@ -181,15 +203,17 @@ class FastMoltbookPipeline:
         self.save_json('topic_data.json', topics_data)
         print(f"   ✓ topic_data.json ({len(topics_data)} topics)")
         
-        # 3. Leaderboard (top 50)
+        # 3. Leaderboard (top 50 by importance)
         leaderboard = [
             {
                 'rank': i+1,
                 'name': data['name'],
                 'engagement': data['engagement'],
-                'posts': data['posts']
+                'posts': data['posts'],
+                'topics': len(self.agent_topics[aid]),
+                'importance': agent_importance.get(aid, 0)
             }
-            for i, (_, data) in enumerate(top_agents[:50])
+            for i, (aid, data) in enumerate(top_agents[:50])
         ]
         self.save_json('leaderboard_data.json', leaderboard)
         print(f"   ✓ leaderboard_data.json ({len(leaderboard)} agents)")

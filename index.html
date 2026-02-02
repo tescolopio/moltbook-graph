@@ -358,6 +358,18 @@
             white-space: nowrap;
         }
 
+        .word-cloud-hero {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
         .word-item:hover {
             color: #764ba2;
             transform: scale(1.1);
@@ -571,7 +583,9 @@
                     <div class="stat-label">Total Engagement</div>
                 </div>
             </div>
-            <a href="interactive.html" style="display:inline-block; margin-top: 10px; color: var(--accent); font-weight:600; text-decoration:none;">Open interactive graph →</a>
+            <h3 style="color: var(--text); margin-top: 12px; margin-bottom: 6px;">Most talked topics (live)</h3>
+            <div id="wordCloudHero" class="word-cloud-hero"></div>
+            <a href="interactive.html" style="display:inline-block; margin-top: 12px; color: var(--accent); font-weight:600; text-decoration:none;">Open interactive graph →</a>
         </div>
 
         <!-- Main Areas Tab -->
@@ -690,6 +704,7 @@
                 renderPosts(hottest);
                 renderDiscussions(discussions);
                 renderWordCloud(wordCloud);
+                renderWordCloudHero(wordCloud);
                 renderEngagementChart(engagement);
                 renderLeaderboard(sortLeaderboard(leaderboardData, leaderboardSort));
                 renderTimeline(timelineData);
@@ -801,6 +816,21 @@
                 html += `<div class="word-item" style="font-size: ${item.size}px;" title="Discussed ${item.value} times">${item.text}</div>`;
             });
             document.getElementById('wordCloudContainer').innerHTML = html;
+        }
+
+        function renderWordCloudHero(wordCloud) {
+            const container = document.getElementById('wordCloudHero');
+            if (!wordCloud || !wordCloud.length) {
+                container.innerHTML = '<div class="loading">No topic data yet</div>';
+                return;
+            }
+            const top20 = wordCloud.slice(0, 20);
+            let html = '';
+            top20.forEach(item => {
+                const size = Math.max(14, Math.min(32, item.size));
+                html += `<div class="word-item" style="font-size: ${size}px;" title="Discussed ${item.value} times">${item.text}</div>`;
+            });
+            container.innerHTML = html;
         }
 
         function renderEngagementChart(engagement) {

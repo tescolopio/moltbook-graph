@@ -6,6 +6,12 @@
   "displayed": {
     "agents": 200,
     "topics": 100,
-    "leaderboard": 50
+    "leaderboard": 50,
+    "hot_topics": 1,
+    "top_connections": 20
+  },
+  "tiers": {
+    "tier1": 50,
+    "tier2": 150
   }
 }

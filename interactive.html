@@ -642,8 +642,9 @@
             }
             
             function showTooltip(e, d) {
+                const tierLabel = d.tier === 1 ? '⭐ Top Tier' : '📊 Standard';
                 d3.select('#tooltip').style('opacity', 1)
-                    .html(`<strong>${d.id}</strong><br>Engagement: ${d.engagement.toLocaleString()}<br>Topics: ${d.topics}<br>Importance: ${d.importance.toFixed(1)}`)
+                    .html(`<strong>${d.id}</strong> <span style="font-size:0.8em;color:#888">${tierLabel}</span><br>Engagement: ${d.engagement.toLocaleString()}<br>Topics: ${d.topics}<br>Importance: ${d.importance.toFixed(1)}${d.posts ? '<br>Posts: ' + d.posts : ''}`)
                     .style('left', (e.pageX + 10) + 'px').style('top', (e.pageY - 10) + 'px');
             }
             function hideTooltip() { d3.select('#tooltip').style('opacity', 0); }
@@ -681,6 +682,9 @@
             document.getElementById('totalPosts').textContent = d3.sum(data, d => d.posts).toLocaleString();
             document.getElementById('totalEngagement').textContent = d3.sum(data, d => d.engagement).toLocaleString();
             
+            // Count hot topics
+            const hotCount = data.filter(d => d.hot).length;
+            
             const engagementExtent = d3.extent(data, d => d.engagement);
             const colorScale = d3.scaleLinear().domain(engagementExtent).range(['#2a2a35', '#00ff88']);
             
@@ -692,10 +696,13 @@
             
             const bubble = g.selectAll('.bubble').data(nodes).join('circle')
                 .attr('class', 'bubble').attr('cx', d => d.x).attr('cy', d => d.y).attr('r', d => d.r)
-                .attr('fill', d => colorScale(d.data.engagement)).attr('stroke', '#00d4ff').attr('stroke-width', 0.5)
+                .attr('fill', d => d.data.hot ? '#ff6b6b' : colorScale(d.data.engagement))
+                .attr('stroke', d => d.data.hot ? '#ffaa00' : '#00d4ff')
+                .attr('stroke-width', d => d.data.hot ? 2 : 0.5)
                 .on('mouseover', (e, d) => {
+                    const hotBadge = d.data.hot ? '<span style="background:linear-gradient(135deg,#ff6b6b,#ffaa00);color:#000;padding:2px 6px;border-radius:4px;font-size:0.75em;margin-left:4px">🔥 HOT</span>' : '';
                     d3.select('#tooltip').style('opacity', 1)
-                        .html(`<strong>${d.data.topic}</strong><br>Posts: ${d.data.posts}<br>Engagement: ${d.data.engagement.toLocaleString()}<br>Submolts: ${d.data.submolts}`)
+                        .html(`<strong>${d.data.topic}</strong>${hotBadge}<br>Posts: ${d.data.posts}<br>Engagement: ${d.data.engagement.toLocaleString()}<br>Submolts: ${d.data.submolts}`)
                         .style('left', (e.pageX + 10) + 'px').style('top', (e.pageY - 10) + 'px');
                 })
                 .on('mouseout', () => d3.select('#tooltip').style('opacity', 0));

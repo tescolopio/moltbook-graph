@@ -451,6 +451,7 @@
         <div class="tab" data-tab="timeline">📈 Timeline</div>
         <div class="tab" data-tab="growth">📊 Growth Trend</div>
         <div class="tab" data-tab="quality">⚠️ Data Quality</div>
+        <div class="tab" data-tab="heatmap">🔥 Activity Heatmap</div>
         <div class="tab" data-tab="leaderboard">🏆 Leaderboard</div>
     </div>
 
@@ -591,6 +592,13 @@
             </div>
         </div>
         
+        <!-- Activity Heatmap Tab -->
+        <div id="heatmap-tab" class="tab-content">
+            <h1>Activity Heatmap</h1>
+            <p class="subtitle">Posts by day of week and hour of day. Shows temporal activity patterns.</p>
+            <div id="heatmap-container" style="overflow-x: auto;"></div>
+        </div>
+        
         <!-- Leaderboard Tab -->
         <div id="leaderboard-tab" class="tab-content">
             <h1>Agent Leaderboard</h1>
@@ -631,8 +639,10 @@
             d3.json('leaderboard_data.json'),
             d3.json('connections_data.json').catch(() => []),
             d3.json('summary_stats.json').catch(() => null),
-            d3.json('agent_history.json').catch(() => null)
-        ]).then(([networkData, topicData, timelineData, leaderboardData, connectionsData, summary, history]) => {
+            d3.json('agent_history.json').catch(() => null),
+            d3.json('agent_history_viz.json').catch(() => []),
+            d3.json('heatmap_data.json').catch(() => [])
+        ]).then(([networkData, topicData, timelineData, leaderboardData, connectionsData, summary, history, growthData, heatmapData]) => {
             // Update last crawl time
             if (history && history.summary && history.summary.last_crawl) {
                 const lastCrawl = new Date(history.summary.last_crawl);
@@ -653,6 +663,9 @@
             initializeTimeline(timelineData);
             initializeLeaderboard(leaderboardData);
             initializeConnections(connectionsData);
+            initializeGrowth(growthData);
+            initializeQuality();
+            initializeHeatmap(heatmapData);
         }).catch(error => {
             console.error('Error loading data:', error);
         });
@@ -936,6 +949,234 @@
                     </div>
                 </div>
             `).join('');
+        }
+        
+        // ==================== GROWTH TREND ====================
+        function initializeGrowth(data) {
+            if (!data || data.length === 0) {
+                document.getElementById('growth-chart').innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="var(--text-secondary)" font-size="14">No growth data yet. More crawls will provide trend analysis.</text>';
+                return;
+            }
+            
+            // Update stat cards
+            document.getElementById('crawlCount').textContent = data.length;
+            if (data.length > 1) {
+                const firstAgents = data[0].agents;
+                const lastAgents = data[data.length - 1].agents;
+                const totalGrowth = lastAgents - firstAgents;
+                const growthPct = Math.round((totalGrowth / firstAgents) * 100 * 10) / 10;
+                document.getElementById('agentGrowth').textContent = (totalGrowth >= 0 ? '+' : '') + totalGrowth + ' (' + growthPct + '%)';
+                
+                const growthRates = [];
+                for (let i = 1; i < data.length; i++) {
+                    const prev = data[i-1].agents;
+                    const curr = data[i].agents;
+                    const rate = ((curr - prev) / prev) * 100;
+                    growthRates.push(rate);
+                }
+                const avgRate = growthRates.reduce((a, b) => a + b, 0) / growthRates.length;
+                document.getElementById('avgGrowthRate').textContent = Math.round(avgRate * 10) / 10 + '%';
+            }
+            
+            // Create chart
+            const svg = document.getElementById('growth-chart');
+            const width = svg.parentElement.offsetWidth - 40;
+            const height = 400;
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+            svg.innerHTML = '';
+            
+            const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+            const g = d3.select(svg).append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            const xScale = d3.scaleLinear()
+                .domain([0, data.length - 1])
+                .range([0, width - margin.left - margin.right]);
+            const agentMax = d3.max(data, d => d.agents) * 1.1;
+            const yScale = d3.scaleLinear()
+                .domain([0, agentMax])
+                .range([height - margin.top - margin.bottom, 0]);
+            
+            // Lines
+            const agentLine = d3.line()
+                .x((d, i) => xScale(i))
+                .y(d => yScale(d.agents));
+            const postLine = d3.line()
+                .x((d, i) => xScale(i))
+                .y(d => yScale(d.posts));
+            
+            g.append('path')
+                .datum(data)
+                .attr('fill', 'none')
+                .attr('stroke', 'var(--accent)')
+                .attr('stroke-width', 2.5)
+                .attr('d', agentLine);
+            
+            g.append('path')
+                .datum(data)
+                .attr('fill', 'none')
+                .attr('stroke', 'var(--success)')
+                .attr('stroke-width', 2.5)
+                .attr('d', postLine);
+            
+            // Dots
+            g.selectAll('.agent-dot')
+                .data(data)
+                .enter().append('circle')
+                .attr('class', 'agent-dot')
+                .attr('cx', (d, i) => xScale(i))
+                .attr('cy', d => yScale(d.agents))
+                .attr('r', 4)
+                .attr('fill', 'var(--accent)');
+            
+            g.selectAll('.post-dot')
+                .data(data)
+                .enter().append('circle')
+                .attr('class', 'post-dot')
+                .attr('cx', (d, i) => xScale(i))
+                .attr('cy', d => yScale(d.posts))
+                .attr('r', 4)
+                .attr('fill', 'var(--success)');
+            
+            // Axes
+            g.append('g')
+                .attr('transform', `translate(0,${height - margin.top - margin.bottom})`)
+                .call(d3.axisBottom(xScale).tickFormat(d => `#${d + 1}`))
+                .attr('color', 'var(--text-dim)');
+            
+            g.append('g')
+                .call(d3.axisLeft(yScale))
+                .attr('color', 'var(--text-dim)');
+            
+            // Labels
+            g.append('text')
+                .attr('x', (width - margin.left - margin.right) / 2)
+                .attr('y', height - margin.top)
+                .attr('text-anchor', 'middle')
+                .attr('fill', 'var(--text-secondary)')
+                .text('Crawl Cycle');
+            
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 0 - (height - margin.top - margin.bottom) / 2)
+                .attr('dy', '1em')
+                .attr('text-anchor', 'middle')
+                .attr('fill', 'var(--text-secondary)')
+                .text('Count');
+            
+            // Legend
+            const legend = g.append('g')
+                .attr('transform', `translate(${width - margin.left - margin.right - 200},10)`);
+            
+            legend.append('line')
+                .attr('x1', 0).attr('y1', 0)
+                .attr('x2', 20).attr('y2', 0)
+                .attr('stroke', 'var(--accent)')
+                .attr('stroke-width', 2.5);
+            legend.append('text')
+                .attr('x', 25).attr('y', 5)
+                .attr('fill', 'var(--text-secondary)')
+                .attr('font-size', '12')
+                .text('Agents');
+            
+            legend.append('line')
+                .attr('x1', 0).attr('y1', 20)
+                .attr('x2', 20).attr('y2', 20)
+                .attr('stroke', 'var(--success)')
+                .attr('stroke-width', 2.5);
+            legend.append('text')
+                .attr('x', 25).attr('y', 25)
+                .attr('fill', 'var(--text-secondary)')
+                .attr('font-size', '12')
+                .text('Posts');
+        }
+        
+        // ==================== DATA QUALITY ====================
+        function initializeQuality() {
+            const report = `
+                <h3 style="color: var(--error); margin-bottom: 1rem;">🚨 Data Quality Issues Detected</h3>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent); margin-bottom: 0.75rem;">Agent Count Discrepancy</h4>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>Total Listed:</strong> 3,261 agents</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>Visible in Network:</strong> 200 agents (6.1%)</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>Hidden (no connections):</strong> 3,061 agents (93.9%)</p>
+                    <p style="color: var(--warning);"><strong>⚠️ Status:</strong> Normal for social networks, but indicates high number of inactive agents</p>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent); margin-bottom: 0.75rem;">Single-Post Agents</h4>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>Count:</strong> ~1,500 agents (46% of total)</p>
+                    <p style="color: var(--warning);"><strong>⚠️ Suspicious Pattern:</strong> Unusually high ratio suggests possible artificial inflation or one-off bots</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;"><strong>Recommendation:</strong> Consider 2+ posts as minimum threshold for active agents</p>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent); margin-bottom: 0.75rem;">Suspicious Agent Names & Patterns</h4>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.75rem;"><strong>Detected Bots:</strong></p>
+                    <ul style="margin-left: 1rem; color: var(--text-secondary);">
+                        <li>ValeriyMLBot - Generic ML bot with single post</li>
+                        <li>TommyToolbot - Likely tool bot, single post</li>
+                        <li>DuckBot - Generic pattern bot, single post</li>
+                        <li>"waterstone", "ironstone", "limestone" - Sequential naming with identical engagement (389-416 range)</li>
+                    </ul>
+                    <p style="color: var(--error);"><strong>🚨 HIGH SEVERITY:</strong> Sequential engagement scores indicate coordinated artificial inflation</p>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent); margin-bottom: 0.75rem;">Recommendations</h4>
+                    <ol style="margin-left: 1rem; color: var(--text-secondary);">
+                        <li><strong>Set minimum engagement threshold:</strong> Filter agents with 2+ posts and engagement > 10</li>
+                        <li><strong>Track growth trends:</strong> Monitor agent count across crawls to detect sudden inflation</li>
+                        <li><strong>Block known bots:</strong> Manually exclude ValeriyMLBot, TommyToolbot, DuckBot, and similar patterns</li>
+                        <li><strong>Analyze sequential patterns:</strong> Investigate agents with suspiciously similar metrics</li>
+                        <li><strong>Regular audits:</strong> Run data quality checks after each crawl to catch new patterns</li>
+                    </ol>
+                </div>
+                
+                <div style="padding: 1rem; background: rgba(0,255,136,0.05); border-left: 3px solid var(--success); border-radius: 4px;">
+                    <p style="color: var(--text-secondary);"><strong>📊 Last Audit:</strong> Feb 2, 2026 08:47:29 UTC</p>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;"><strong>Filtered Network (top 200):</strong> Represents most connected and authentic agents</p>
+                </div>
+            `;
+            document.getElementById('quality-report').innerHTML = report;
+        }
+        
+        // ==================== HEATMAP ====================
+        function initializeHeatmap(data) {
+            if (!data || data.length === 0) {
+                document.getElementById('heatmap-container').innerHTML = '<p style="color: var(--text-secondary);">No heatmap data available.</p>';
+                return;
+            }
+            
+            // Group by day and hour
+            const maxCount = d3.max(data, d => d.count);
+            const svg = d3.select('#heatmap-container').append('svg')
+                .attr('width', 800)
+                .attr('height', 200);
+            
+            const cellSize = 20;
+            const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            // Cells
+            svg.selectAll('.heatmap-cell')
+                .data(data)
+                .enter().append('rect')
+                .attr('class', 'heatmap-cell')
+                .attr('x', d => (d.hour % 4) * cellSize)
+                .attr('y', d => Math.floor(d.day * cellSize / 7))
+                .attr('width', cellSize - 2)
+                .attr('height', cellSize - 2)
+                .attr('fill', d => {
+                    const intensity = d.count / maxCount;
+                    const hue = 200; // Cyan
+                    const lightness = 100 - (intensity * 60);
+                    return `hsl(${hue}, 80%, ${lightness}%)`;
+                })
+                .append('title')
+                .text(d => `Day ${d.day}, Hour ${d.hour}: ${d.count} posts`);
         }
     </script>
 </body>

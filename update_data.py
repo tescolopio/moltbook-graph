@@ -81,9 +81,14 @@ class FastMoltbookPipeline:
             submolt = submolt_data.get('name') if isinstance(submolt_data, dict) else str(submolt_data)
             submolt = submolt or 'General'
             
-            # Calculate interaction (replies + comments are most meaningful)
-            replies = post.get('replies', 0) + post.get('comments', 0)
-            engagement = replies  # Primary metric: actual interaction
+            # Calculate engagement from POST-level metrics (comments + upvotes)
+            # This is the "hotness" score for individual posts/topics
+            comments = post.get('comment_count', post.get('comments', 0))
+            upvotes = post.get('upvotes', 0)
+            
+            # Engagement formula: comments are direct engagement, upvotes are agreement
+            # Weight comments more heavily as they show actual discussion
+            post_engagement = comments + (upvotes // 1000)  # 1000 upvotes ≈ 1 comment value
             
             if author:
                 # Track agent data
@@ -92,21 +97,23 @@ class FastMoltbookPipeline:
                     self.agents[agent_id] = {'name': author, 'posts': 0, 'engagement': 0, 'topics': 0}
                 
                 self.agents[agent_id]['posts'] += 1
-                self.agents[agent_id]['engagement'] += engagement
-                self.agent_engagement[agent_id] += engagement
+                self.agents[agent_id]['engagement'] += post_engagement  # Aggregate author's post engagement
+                self.agent_engagement[agent_id] += post_engagement
                 self.agent_topics[agent_id].add(submolt)
             
-            # Track topics
+            # Track topics (main areas)
             if submolt:
                 self.topics[submolt] += 1
             
-            # Store post
+            # Store post with engagement metrics
             self.posts.append({
                 'id': post.get('id'),
                 'title': post.get('title', ''),
                 'author': author,
                 'submolt': submolt,
-                'engagement': engagement,
+                'engagement': post_engagement,
+                'comments': comments,
+                'upvotes': upvotes,
                 'created': post.get('created_at', '')
             })
         
@@ -136,6 +143,73 @@ class FastMoltbookPipeline:
         path = os.path.join(self.output_dir, filename)
         with open(path, 'w') as f:
             json.dump(data, f, default=str)
+    
+    def build_discussion_trees(self):
+        """Fetch comment/reply trees for top posts (limited for performance)."""
+        print("🌳 Building discussion trees for top posts...")
+        
+        discussion_trees = {}
+        
+        # Only fetch trees for top 10 most-commented posts (to stay within API rate limits)
+        top_posts = sorted(self.posts, key=lambda p: p.get('comments', 0), reverse=True)[:10]
+        
+        for post in top_posts:
+            post_id = post.get('id')
+            
+            try:
+                # Fetch comments for this post
+                response = self.session.get(
+                    f"{self.base_url}/api/v1/posts/{post_id}/comments",
+                    params={"limit": 200, "sort": "top"},
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    comments_data = response.json()
+                    comments = comments_data.get('comments', [])
+                    
+                    # Separate top-level comments and replies
+                    top_level = [c for c in comments if c.get('parent_id') is None]
+                    replies = [c for c in comments if c.get('parent_id') is not None]
+                    
+                    # Build reply tree
+                    reply_tree = defaultdict(list)
+                    for reply in replies:
+                        parent_id = reply.get('parent_id')
+                        reply_tree[parent_id].append({
+                            'id': reply.get('id'),
+                            'author': reply.get('author', {}).get('name', 'unknown'),
+                            'content': reply.get('content', '')[:150],
+                            'upvotes': reply.get('upvotes', 0),
+                            'created_at': reply.get('created_at', '')
+                        })
+                    
+                    discussion_trees[post_id] = {
+                        'post_title': post.get('title', ''),
+                        'post_author': post.get('author', ''),
+                        'submolt': post.get('submolt', ''),
+                        'total_comments': comments_data.get('count', 0),
+                        'top_level_comments_fetched': len(top_level),
+                        'replies_fetched': len(replies),
+                        'top_comments': [
+                            {
+                                'id': c.get('id'),
+                                'author': c.get('author', {}).get('name', 'unknown'),
+                                'content': c.get('content', '')[:150],
+                                'upvotes': c.get('upvotes', 0),
+                                'created_at': c.get('created_at', ''),
+                                'reply_count': len(reply_tree.get(c.get('id'), []))
+                            }
+                            for c in top_level[:5]
+                        ]
+                    }
+                    
+                    print(f"   ✓ {post.get('title', '')[:60]}... ({len(top_level)} comments, {len(replies)} replies)")
+            except Exception as e:
+                print(f"   ⚠️  Error fetching comments for {post_id}: {str(e)[:50]}")
+                continue
+        
+        return discussion_trees
     
     def export_all(self):
         """Export all JSON files."""
@@ -311,6 +385,76 @@ class FastMoltbookPipeline:
         ]
         self.save_json('heatmap_data.json', heatmap_data)
         print(f"   ✓ heatmap_data.json (168 cells)")
+        
+        # 10. Hottest posts per topic (main areas)
+        posts_by_topic = defaultdict(list)
+        for post in self.posts:
+            topic = post.get('submolt', 'General')
+            posts_by_topic[topic].append(post)
+        
+        # Get top 5 posts per topic, sorted by engagement
+        hottest_per_topic = {}
+        for topic, posts in posts_by_topic.items():
+            sorted_posts = sorted(posts, key=lambda p: p.get('engagement', 0), reverse=True)
+            hottest_per_topic[topic] = [
+                {
+                    'id': p['id'],
+                    'title': p['title'],
+                    'author': p['author'],
+                    'engagement': p['engagement'],
+                    'comments': p.get('comments', 0),
+                    'upvotes': p.get('upvotes', 0),
+                    'created': p.get('created', '')
+                }
+                for p in sorted_posts[:5]
+            ]
+        
+        self.save_json('hottest_posts_per_topic.json', hottest_per_topic)
+        print(f"   ✓ hottest_posts_per_topic.json ({len(hottest_per_topic)} topics)")
+        
+        # 11. Discussion trees (comments + replies for top posts)
+        discussion_trees = self.build_discussion_trees()
+        self.save_json('discussion_trees.json', discussion_trees)
+        print(f"   ✓ discussion_trees.json ({len(discussion_trees)} posts with engagement trees)")
+        
+        # 12. Word cloud data (topic frequency for visualization)
+        import math
+        word_cloud = [
+            {
+                'text': t,
+                'value': c,
+                'size': max(12, min(72, math.log(c + 1) * 8))  # Font size based on frequency
+            }
+            for t, c in top_topics[:50]  # Top 50 topics
+        ]
+        self.save_json('word_cloud_data.json', word_cloud)
+        print(f"   ✓ word_cloud_data.json ({len(word_cloud)} topics)")
+        
+        # 13. Engagement distribution (for histogram)
+        engagement_values = sorted([a['engagement'] for a in self.agents.values()], reverse=True)
+        if engagement_values:
+            max_eng = engagement_values[0]
+            bins = 10
+            bin_size = max(1, max_eng // bins)
+            
+            engagement_dist = defaultdict(int)
+            for eng in engagement_values:
+                bin_idx = min(bins - 1, eng // bin_size) if bin_size > 0 else 0
+                engagement_dist[bin_idx] += 1
+            
+            engagement_histogram = [
+                {
+                    'range': f"{i * bin_size}-{(i + 1) * bin_size}",
+                    'count': engagement_dist[i],
+                    'agents': engagement_dist[i]
+                }
+                for i in range(bins)
+            ]
+        else:
+            engagement_histogram = []
+        
+        self.save_json('engagement_distribution.json', engagement_histogram)
+        print(f"   ✓ engagement_distribution.json (distribution across {len(self.agents)} agents)")
         
         return True
     

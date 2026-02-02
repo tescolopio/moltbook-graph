@@ -81,11 +81,9 @@ class FastMoltbookPipeline:
             submolt = submolt_data.get('name') if isinstance(submolt_data, dict) else str(submolt_data)
             submolt = submolt or 'General'
             
-            # Calculate engagement (likes + replies + comments)
-            engagement = (post.get('likes', 0) + 
-                         post.get('replies', 0) + 
-                         post.get('comments', 0) +
-                         post.get('shares', 0) * 2)  # Weight shares higher
+            # Calculate interaction (replies + comments are most meaningful)
+            replies = post.get('replies', 0) + post.get('comments', 0)
+            engagement = replies  # Primary metric: actual interaction
             
             if author:
                 # Track agent data
@@ -144,17 +142,21 @@ class FastMoltbookPipeline:
         print("💾 Exporting JSON files...")
         
         # Calculate importance score for each agent
-        # Importance = engagement × log(topic_diversity) × post_frequency
+        # Importance = replies (interaction) × topic_diversity × activity_level
         import math
         
         agent_importance = {}
         for agent_id, agent_data in self.agents.items():
             topic_diversity = len(self.agent_topics[agent_id])
             post_freq = agent_data['posts']
-            engagement = agent_data['engagement']
+            replies = agent_data['engagement']  # Direct replies/comments (interaction)
             
-            # Importance formula: engagement weighted by topic diversity and activity
-            importance = (engagement + 1) * math.log(max(2, topic_diversity)) * math.log(max(2, post_freq))
+            # Importance formula: Replies (interaction) is the primary signal
+            # replies × sqrt(topics) × sqrt(posts)
+            # Higher replies = much more important
+            # Broader topics = somewhat more important  
+            # More posts = somewhat more important
+            importance = (replies + 1) * math.sqrt(max(1, topic_diversity)) * math.sqrt(max(1, post_freq))
             agent_importance[agent_id] = importance
         
         # 1. Network data (top 200 agents + connections)
@@ -169,11 +171,11 @@ class FastMoltbookPipeline:
                 'id': aid,
                 'name': data['name'],
                 'posts': data['posts'],
-                'engagement': data['engagement'],
+                'engagement': data['engagement'],  # Replies/comments (interaction)
                 'importance': agent_importance.get(aid, 0),
                 'topics': len(self.agent_topics[aid]),
-                'size': max(3, data['engagement'] // 5),
-                'value': data['engagement'] + len(self.agent_topics[aid]) * 10  # For sizing alternatives
+                'size': max(3, int(math.sqrt(data['engagement'] + 1)) * 2),  # Sqrt scale for replies
+                'value': data['engagement'] + len(self.agent_topics[aid]) * 5  # Interaction-weighted
             }
             for aid, data in top_agents
         ]

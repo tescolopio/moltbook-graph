@@ -1,17 +1,1 @@
-{
-  "total_agents": 3261,
-  "total_topics": 1228,
-  "total_posts": 4038,
-  "total_relationships": 18138,
-  "displayed": {
-    "agents": 200,
-    "topics": 100,
-    "leaderboard": 50,
-    "hot_topics": 1,
-    "top_connections": 20
-  },
-  "tiers": {
-    "tier1": 50,
-    "tier2": 150
-  }
-}
+{"total_agents": 3390, "total_topics": 114, "total_posts": 5000, "total_connections": 8539, "total_engagement": 0, "crawled_at": "2026-02-02T14:47:45.627611"}

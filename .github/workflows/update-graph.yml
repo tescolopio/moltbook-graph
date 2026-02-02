@@ -35,6 +35,10 @@ jobs:
             -p 7474:7474 -p 7687:7687 \
             -e NEO4J_AUTH="neo4j/${NEO4J_PASS}" \
             -e NEO4J_PLUGINS='["apoc"]' \
+            -e NEO4J_server_memory_heap_initial__size=1G \
+            -e NEO4J_server_memory_heap_max__size=2G \
+            -e NEO4J_server_memory_pagecache_size=512M \
+            -e NEO4J_db_memory_transaction_total_max=1G \
             neo4j:latest
           
           # Wait for Neo4j to be ready
@@ -75,7 +79,7 @@ jobs:
             --neo-user neo4j \
             --neo-password "$NEO4J_PASS" \
             --output-dir . \
-            --max-agents 500
+            --max-agents 200
             
       - name: Generate HTML
         run: |

@@ -102,6 +102,49 @@ class InteractiveDataGenerator:
                 for record in result
             ]
 
+    def get_timeline_data(self):
+        """Get post activity over time"""
+        query = """
+        MATCH (p:Post)
+        WHERE p.created_at IS NOT NULL
+        RETURN substring(p.created_at, 0, 13) as hour, count(p) as count
+        ORDER BY hour
+        """
+        
+        with self.driver.session() as session:
+            result = session.run(query)
+            return [
+                {
+                    "time": record["hour"],
+                    "count": int(record["count"])
+                }
+                for record in result
+                if record["hour"]
+            ]
+
+    def get_leaderboard_data(self):
+        """Get top agents stats"""
+        query = """
+        MATCH (a:Agent)-[:CREATED]->(p:Post)
+        WITH a, count(p) as posts, sum(p.score) as engagement
+        OPTIONAL MATCH (a)-[:CREATED]->(:Post)-[:DISCUSSES]->(t:Topic)
+        WITH a, posts, engagement, count(distinct t) as topics
+        RETURN a.name as name, posts, engagement, topics
+        ORDER BY engagement DESC LIMIT 50
+        """
+        
+        with self.driver.session() as session:
+            result = session.run(query)
+            return [
+                {
+                    "name": record["name"],
+                    "posts": int(record["posts"]),
+                    "engagement": int(record["engagement"]),
+                    "topics": int(record["topics"])
+                }
+                for record in result
+            ]
+
 def main():
     parser = argparse.ArgumentParser(description='Generate interactive visualization data')
     parser.add_argument('--neo-uri', default='bolt://localhost:7687', help='Neo4j URI')

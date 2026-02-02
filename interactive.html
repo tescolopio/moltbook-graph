@@ -483,20 +483,20 @@
             
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-value" id="nodeCount">0</div>
-                    <div class="stat-label">Agents (Displayed)</div>
+                    <div class="stat-value" id="listedAgentCount">0</div>
+                    <div class="stat-label">Listed Agents</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="totalAgentCount">0</div>
-                    <div class="stat-label">Total Agents</div>
+                    <div class="stat-value" id="agentsByPost">0</div>
+                    <div class="stat-label">Agents by Post</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="agentsByInteraction">0</div>
+                    <div class="stat-label">Agents by Interaction</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="linkCount">0</div>
-                    <div class="stat-label">Connections</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="avgConnections">0</div>
-                    <div class="stat-label">Avg Conn.</div>
+                    <div class="stat-label">Total Connections</div>
                 </div>
             </div>
         </div>
@@ -606,7 +606,7 @@
         function initializeNetwork(data, summary) {
             summaryStats = summary;
             
-            // Show quality warning
+            // Show quality warning and key metrics
             if (summary) {
                 const displayedAgents = data.nodes.length;
                 const totalAgents = summary.total_agents;
@@ -615,6 +615,13 @@
                 
                 document.getElementById('quality-warning').style.display = 'block';
                 document.getElementById('hidden-agents-pct').textContent = hiddenPct + '%';
+                
+                // Update the three key metrics
+                document.getElementById('listedAgentCount').textContent = totalAgents.toLocaleString();
+                // Estimate agents with posts: total_posts / average_posts_per_agent
+                const estimatedAgentsByPost = Math.round(summary.total_posts / (summary.total_posts / totalAgents));
+                document.getElementById('agentsByPost').textContent = estimatedAgentsByPost.toLocaleString();
+                document.getElementById('agentsByInteraction').textContent = displayedAgents.toLocaleString();
             }
             
             const svg = d3.select('#network');
@@ -655,9 +662,7 @@
                 document.getElementById('totalAgentCount').textContent = summaryStats 
                     ? summaryStats.total_agents.toLocaleString()
                     : 'N/A';
-                document.getElementById('linkCount').textContent = summaryStats
-                    ? filteredLinks.length
-                    : filteredLinks.length;
+                document.getElementById('linkCount').textContent = filteredLinks.length;
                 document.getElementById('avgConnections').textContent = 
                     filteredNodes.length > 0 ? (filteredLinks.length * 2 / filteredNodes.length).toFixed(1) : 0;
                 

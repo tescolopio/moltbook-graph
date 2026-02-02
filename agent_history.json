@@ -1,0 +1,18 @@
+{
+  "crawls": [
+    {
+      "timestamp": "2026-02-02T08:47:29.684514",
+      "total_agents": 3261,
+      "total_posts": 4038,
+      "total_topics": 1228,
+      "total_relationships": 18138
+    }
+  ],
+  "summary": {
+    "first_crawl": "2026-02-02T08:47:29.684514",
+    "last_crawl": "2026-02-02T08:47:29.684514",
+    "total_crawls": 1,
+    "max_agents": 3261,
+    "min_agents": 3261
+  }
+}

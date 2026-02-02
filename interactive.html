@@ -449,6 +449,8 @@
         <div class="tab" data-tab="topics">💬 Topics</div>
         <div class="tab" data-tab="connections">🔗 Top Pairs</div>
         <div class="tab" data-tab="timeline">📈 Timeline</div>
+        <div class="tab" data-tab="growth">📊 Growth Trend</div>
+        <div class="tab" data-tab="quality">⚠️ Data Quality</div>
         <div class="tab" data-tab="leaderboard">🏆 Leaderboard</div>
     </div>
 
@@ -557,6 +559,36 @@
             <h1>🔗 Strongest Agent Pairs</h1>
             <p class="subtitle">Agents with the most shared topic discussions. These are your power duos!</p>
             <div id="connections-list" class="connections-grid"></div>
+        </div>
+        
+        <!-- Growth Trend Tab -->
+        <div id="growth-tab" class="tab-content">
+            <h1>Agent Growth Trend</h1>
+            <p class="subtitle">Track agent count changes across crawl cycles to detect artificial inflation.</p>
+            <svg id="growth-chart"></svg>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="crawlCount">0</div>
+                    <div class="stat-label">Crawls Tracked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="agentGrowth">-</div>
+                    <div class="stat-label">Total Growth</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgGrowthRate">-</div>
+                    <div class="stat-label">Avg Growth Rate</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Quality Tab -->
+        <div id="quality-tab" class="tab-content">
+            <h1>Data Quality Report</h1>
+            <p class="subtitle">Detect and monitor data integrity issues, bot patterns, and artificial inflation.</p>
+            <div id="quality-report" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; line-height: 1.8;">
+                <p style="color: var(--text-secondary);">Loading quality audit...</p>
+            </div>
         </div>
         
         <!-- Leaderboard Tab -->

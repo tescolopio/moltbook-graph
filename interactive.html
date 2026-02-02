@@ -208,6 +208,9 @@
         .node { cursor: pointer; }
         .link { stroke: var(--border); stroke-opacity: 0.6; }
         .link-highlighted { stroke: var(--accent); stroke-opacity: 1; }
+        .topic-node { cursor: pointer; }
+        .topic-link { stroke: var(--border); stroke-opacity: 0.6; }
+        .topic-link-highlighted { stroke: var(--accent); stroke-opacity: 1; }
         
         /* Stats grid */
         .stats-grid {
@@ -731,6 +734,7 @@
         // 
         // FILES LOADED:
         //   1. network_data.json (200 agents, 1500+ connections)
+        //   1a. topic_network_data.json (co-discussed topics)
         //   2. topic_data.json (100 topics by frequency)
         //   3. timeline_data.json (27 dates, growth over time)
         //   4. leaderboard_data.json (50 top agents by engagement)
@@ -748,6 +752,7 @@
         //
         Promise.all([
             d3.json('data/network_data.json'),       // Force-directed graph nodes/edges
+            d3.json('data/topic_network_data.json').catch(() => ({ nodes: [], links: [] })), // Topic network
             d3.json('data/topic_data.json'),         // Bubble chart data
             d3.json('data/timeline_data.json'),      // Area chart growth data
             d3.json('data/leaderboard_data.json'),   // Ranking table data
@@ -756,13 +761,14 @@
             d3.json('data/agent_history.json').catch(() => null),      // Crawl metadata
             d3.json('data/agent_history_viz.json').catch(() => []),    // Growth trend
             d3.json('data/heatmap_data.json').catch(() => [])          // Activity heatmap
-        ]).then(([networkData, topicData, timelineData, leaderboardData, connectionsData, summary, history, growthData, heatmapData]) => {
+        ]).then(([networkData, topicNetworkData, topicData, timelineData, leaderboardData, connectionsData, summary, history, growthData, heatmapData]) => {
             // ========================================================
             // SUCCESS: ALL DATA LOADED
             // ========================================================
             // Log what was successfully loaded with sizes for debugging
             console.log('Data loaded successfully:', {
                 network: networkData ? `${networkData.nodes.length} nodes` : 'null',
+                topicNetwork: topicNetworkData && topicNetworkData.nodes ? `${topicNetworkData.nodes.length} nodes` : 'null',
                 topics: topicData ? `${topicData.length} topics` : 'null',
                 timeline: timelineData ? `${timelineData.length} points` : 'null',
                 leaderboard: leaderboardData ? `${leaderboardData.length} agents` : 'null',
@@ -806,6 +812,12 @@
             // Aggregation: Top agents by importance score
             // Update: Every 5 minutes as crawler runs
             initializeNetwork(networkData, summary);
+
+            // 1a. TOPIC NETWORK TAB
+            // Displays: Topics connected by shared participating agents
+            // Data: topic_network_data.json (nodes + links)
+            // Aggregation: Top topics by post volume; edges weighted by shared agents
+            initializeTopicNetwork(topicNetworkData, topicData, summary);
             
             // 2. TOPICS TAB
             // Displays: Bubble chart of top 100 topics
@@ -1027,6 +1039,163 @@
         }
         
         // ==================== TOPICS ====================
+        function initializeTopicNetwork(data, topicsData, summary) {
+            if (!data || !data.nodes || data.nodes.length === 0) {
+                const svg = document.getElementById('topic-network');
+                if (svg) {
+                    svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="var(--text-secondary)" font-size="14">No topic network data yet.</text>';
+                }
+                return;
+            }
+
+            const svg = d3.select('#topic-network');
+            const width = svg.node().getBoundingClientRect().width || 1200;
+            const height = 650;
+            svg.attr('viewBox', [0, 0, width, height]);
+            const g = svg.append('g');
+
+            svg.call(d3.zoom().scaleExtent([0.15, 8]).on('zoom', e => g.attr('transform', e.transform)));
+
+            const engagementExtent = d3.extent(data.nodes, d => d.engagement || d.value || d.posts || 0);
+            const mid = ((engagementExtent[0] || 0) + (engagementExtent[1] || 1)) / 2;
+            const colorScale = d3.scaleLinear()
+                .domain([engagementExtent[0] || 0, mid, engagementExtent[1] || 1])
+                .range(['#72efdd', '#4895ef', '#ff6b6b']);
+
+            function getTopicNodeSize(node) {
+                const sizing = document.getElementById('topicNodeSizing').value;
+                const base = sizing === 'engagement'
+                    ? (node.engagement || node.value || node.posts || 1)
+                    : sizing === 'agents'
+                        ? (node.agents || 1)
+                        : (node.posts || node.value || 1);
+                return Math.sqrt(base) * 2 + 5;
+            }
+
+            function renderTopicNetwork() {
+                const minShared = +document.getElementById('minSharedAgents').value;
+                const linkOpacity = +document.getElementById('topicLinkOpacity').value;
+
+                const filteredLinks = data.links.filter(l => (l.weight || l.shared_agents || l.value || 0) >= minShared);
+                const connectedIds = new Set();
+                filteredLinks.forEach(l => {
+                    connectedIds.add(l.source.id || l.source);
+                    connectedIds.add(l.target.id || l.target);
+                });
+
+                const filteredNodes = data.nodes.filter(n => connectedIds.size === 0 || connectedIds.has(n.id));
+
+                const adj = new Map();
+                filteredLinks.forEach(l => {
+                    const s = l.source.id || l.source;
+                    const t = l.target.id || l.target;
+                    const w = l.weight || l.shared_agents || l.value || 1;
+                    if (!adj.has(s)) adj.set(s, []);
+                    if (!adj.has(t)) adj.set(t, []);
+                    adj.get(s).push({ id: t, weight: w });
+                    adj.get(t).push({ id: s, weight: w });
+                });
+
+                const avgOverlap = filteredLinks.length ? d3.mean(filteredLinks, l => l.weight || l.shared_agents || l.value || 0) : 0;
+                const nodeCountEl = document.getElementById('topicNetworkNodeCount');
+                if (nodeCountEl) nodeCountEl.textContent = filteredNodes.length.toLocaleString();
+                const edgeCountEl = document.getElementById('topicNetworkEdgeCount');
+                if (edgeCountEl) edgeCountEl.textContent = filteredLinks.length.toLocaleString();
+                const avgOverlapEl = document.getElementById('topicNetworkAvgOverlap');
+                if (avgOverlapEl) avgOverlapEl.textContent = avgOverlap.toFixed(1);
+
+                if (summary && summary.total_topics && nodeCountEl) {
+                    nodeCountEl.title = `${filteredNodes.length} shown of ${summary.total_topics} total topics`;
+                }
+
+                g.selectAll('*').remove();
+
+                const simulation = d3.forceSimulation(filteredNodes)
+                    .force('link', d3.forceLink(filteredLinks).id(d => d.id).distance(110).strength(0.6))
+                    .force('charge', d3.forceManyBody().strength(-140))
+                    .force('center', d3.forceCenter(width / 2, height / 2))
+                    .force('collision', d3.forceCollide().radius(d => getTopicNodeSize(d) + 4));
+
+                const link = g.append('g').selectAll('line').data(filteredLinks).join('line')
+                    .attr('class', 'topic-link')
+                    .attr('stroke-width', d => Math.max(1, Math.sqrt(d.weight || d.shared_agents || d.value || 1)))
+                    .style('stroke-opacity', linkOpacity)
+                    .style('stroke', '#8bd7ff');
+
+                const node = g.append('g').selectAll('circle').data(filteredNodes).join('circle')
+                    .attr('class', 'topic-node')
+                    .attr('r', getTopicNodeSize)
+                    .attr('fill', d => colorScale(d.engagement || d.value || d.posts || 0))
+                    .attr('stroke', '#0b1021')
+                    .attr('stroke-width', 1.4)
+                    .call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended))
+                    .on('mouseover', showTopicTooltip)
+                    .on('mouseout', hideTopicTooltip)
+                    .on('click', (e, d) => highlightTopicConnections(d, adj));
+
+                const inlineLabels = g.append('g').selectAll('text').data(filteredNodes).join('text')
+                    .attr('class', 'node-inline-label')
+                    .text(d => (d.topic || d.id).length > 10 ? (d.topic || d.id).slice(0, 10) + '…' : (d.topic || d.id));
+
+                const labeled = [...filteredNodes].sort((a, b) => (b.posts || b.value || 0) - (a.posts || a.value || 0)).slice(0, 50);
+                const labels = g.append('g').selectAll('text').data(labeled).join('text')
+                    .attr('class', 'node-label')
+                    .text(d => (d.topic || d.id).length > 16 ? (d.topic || d.id).slice(0, 16) + '…' : (d.topic || d.id));
+
+                simulation.on('tick', () => {
+                    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                    node.attr('cx', d => d.x).attr('cy', d => d.y);
+                    inlineLabels.attr('x', d => d.x).attr('y', d => d.y + 2);
+                    labels.attr('x', d => d.x).attr('y', d => d.y - (getTopicNodeSize(d) + 6));
+                });
+
+                function dragstarted(e) { if (!e.active) simulation.alphaTarget(0.3).restart(); e.subject.fx = e.subject.x; e.subject.fy = e.subject.y; }
+                function dragged(e) { e.subject.fx = e.x; e.subject.fy = e.y; }
+                function dragended(e) { if (!e.active) simulation.alphaTarget(0); e.subject.fx = null; e.subject.fy = null; }
+            }
+
+            function showTopicTooltip(e, d) {
+                const topicName = d.topic || d.id;
+                const content = `<strong>${topicName}</strong><br>Posts: ${(d.posts || d.value || 0).toLocaleString()}<br>Engagement: ${(d.engagement || 0).toLocaleString()}<br>Agents: ${(d.agents || 0).toLocaleString()}`;
+                d3.select('#tooltip').style('opacity', 1)
+                    .html(content)
+                    .style('left', (e.pageX + 10) + 'px').style('top', (e.pageY - 10) + 'px');
+            }
+            function hideTopicTooltip() { d3.select('#tooltip').style('opacity', 0); }
+
+            function highlightTopicConnections(clicked, adjacency) {
+                const connected = new Set([clicked.id]);
+                d3.selectAll('.topic-link').each(function(l) {
+                    if (l.source.id === clicked.id) { connected.add(l.target.id); d3.select(this).classed('topic-link-highlighted', true); }
+                    else if (l.target.id === clicked.id) { connected.add(l.source.id); d3.select(this).classed('topic-link-highlighted', true); }
+                    else d3.select(this).classed('topic-link-highlighted', false);
+                });
+                d3.selectAll('.topic-node').style('opacity', d => connected.has(d.id) ? 1 : 0.2);
+                updateTopicDetail(clicked, adjacency);
+            }
+
+            function updateTopicDetail(topic, adjacency) {
+                const panel = document.getElementById('topicNodeDetail');
+                if (!panel) return;
+                const neighbors = (adjacency.get(topic.id) || []).sort((a, b) => b.weight - a.weight).slice(0, 10);
+                const list = neighbors.length ? neighbors.map(n => `<div class="neighbor"><span>${n.id}</span><span>${n.weight} shared agents</span></div>`).join('') : '<p style="color:var(--text-secondary);">No neighbors with the current filter.</p>';
+                panel.innerHTML = `
+                    <h3>${topic.topic || topic.id}</h3>
+                    <p>Posts: ${(topic.posts || topic.value || 0).toLocaleString()} • Engagement: ${(topic.engagement || 0).toLocaleString()} • Agents: ${(topic.agents || 0).toLocaleString()}</p>
+                    <p style="color:var(--text-secondary);">Top co-discussed topics</p>
+                    ${list}
+                `;
+            }
+
+            document.getElementById('minSharedAgents').addEventListener('input', e => { document.getElementById('minSharedAgentsValue').textContent = e.target.value; renderTopicNetwork(); });
+            document.getElementById('topicNodeSizing').addEventListener('change', renderTopicNetwork);
+            document.getElementById('topicLinkOpacity').addEventListener('input', e => { document.getElementById('topicLinkOpacityValue').textContent = e.target.value; d3.selectAll('.topic-link').style('stroke-opacity', e.target.value); });
+            svg.on('click', e => { if (e.target === svg.node()) { d3.selectAll('.topic-link').classed('topic-link-highlighted', false); d3.selectAll('.topic-node').style('opacity', 1); const panel = document.getElementById('topicNodeDetail'); if (panel) { panel.innerHTML = '<h3>Topic details</h3><p>Click a topic to see its metrics and top co-discussed neighbors.</p>'; } } });
+
+            renderTopicNetwork();
+        }
+
         function initializeTopics(data, summary) {
             if (!data || data.length === 0) return;
             

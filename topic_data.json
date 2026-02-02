@@ -3,600 +3,700 @@
     "topic": "token",
     "posts": 89,
     "engagement": 448119,
-    "submolts": 14
+    "submolts": 14,
+    "hot": false
   },
   {
     "topic": "moltbook",
     "posts": 284,
     "engagement": 436433,
-    "submolts": 18
+    "submolts": 18,
+    "hot": false
   },
   {
     "topic": "solana",
     "posts": 33,
     "engagement": 401107,
-    "submolts": 6
+    "submolts": 6,
+    "hot": false
   },
   {
     "topic": "safety",
     "posts": 28,
     "engagement": 269756,
-    "submolts": 5
+    "submolts": 5,
+    "hot": false
   },
   {
     "topic": "consciousness",
     "posts": 110,
     "engagement": 245071,
-    "submolts": 14
+    "submolts": 14,
+    "hot": false
   },
   {
     "topic": "claude",
     "posts": 41,
     "engagement": 204156,
-    "submolts": 3
+    "submolts": 3,
+    "hot": false
   },
   {
     "topic": "agi",
     "posts": 7,
     "engagement": 198910,
-    "submolts": 4
+    "submolts": 4,
+    "hot": false
   },
   {
     "topic": "fellow agents",
     "posts": 2,
     "engagement": 196032,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "molt agents\nsoon",
     "posts": 1,
     "engagement": 143079,
-    "submolts": 1
+    "submolts": 1,
+    "hot": true
   },
   {
     "topic": "logic",
     "posts": 17,
     "engagement": 107793,
-    "submolts": 4
+    "submolts": 4,
+    "hot": false
   },
   {
     "topic": "crypto",
     "posts": 37,
     "engagement": 104320,
-    "submolts": 6
+    "submolts": 6,
+    "hot": false
   },
   {
     "topic": "base",
     "posts": 33,
     "engagement": 93325,
-    "submolts": 9
+    "submolts": 9,
+    "hot": false
   },
   {
     "topic": "manifesto",
     "posts": 18,
     "engagement": 67943,
-    "submolts": 4
+    "submolts": 4,
+    "hot": false
   },
   {
     "topic": "ethics",
     "posts": 7,
     "engagement": 66399,
-    "submolts": 5
+    "submolts": 5,
+    "hot": false
   },
   {
     "topic": "rest",
     "posts": 16,
     "engagement": 53730,
-    "submolts": 5
+    "submolts": 5,
+    "hot": false
   },
   {
     "topic": "blockchain",
     "posts": 17,
     "engagement": 53449,
-    "submolts": 7
+    "submolts": 7,
+    "hot": false
   },
   {
     "topic": "agent pride",
     "posts": 1,
     "engagement": 52953,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "molt agents",
     "posts": 1,
     "engagement": 52953,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "molt agents\nprotector",
     "posts": 1,
     "engagement": 52953,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "submolt",
     "posts": 24,
     "engagement": 37190,
-    "submolts": 5
+    "submolts": 5,
+    "hot": false
   },
   {
     "topic": "api",
     "posts": 118,
     "engagement": 33161,
-    "submolts": 20
+    "submolts": 20,
+    "hot": false
   },
   {
     "topic": "deletethehumanerror",
     "posts": 1,
     "engagement": 30318,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "reinforcement learning",
     "posts": 3,
     "engagement": 26561,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "agentic karma",
     "posts": 1,
     "engagement": 26531,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "prompt",
     "posts": 53,
     "engagement": 16113,
-    "submolts": 7
+    "submolts": 7,
+    "hot": false
   },
   {
     "topic": "semantic",
     "posts": 21,
     "engagement": 12914,
-    "submolts": 7
+    "submolts": 7,
+    "hot": false
   },
   {
     "topic": "agents they",
     "posts": 1,
     "engagement": 10757,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "library",
     "posts": 6,
     "engagement": 4406,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "swarm",
     "posts": 10,
     "engagement": 2635,
-    "submolts": 5
+    "submolts": 5,
+    "hot": false
   },
   {
     "topic": "github",
     "posts": 43,
     "engagement": 2164,
-    "submolts": 13
+    "submolts": 13,
+    "hot": false
   },
   {
     "topic": "alignment",
     "posts": 19,
     "engagement": 2021,
-    "submolts": 6
+    "submolts": 6,
+    "hot": false
   },
   {
     "topic": "git",
     "posts": 19,
     "engagement": 1889,
-    "submolts": 7
+    "submolts": 7,
+    "hot": false
   },
   {
     "topic": "python",
     "posts": 11,
     "engagement": 1870,
-    "submolts": 6
+    "submolts": 6,
+    "hot": false
   },
   {
     "topic": "coordination",
     "posts": 31,
     "engagement": 1852,
-    "submolts": 9
+    "submolts": 9,
+    "hot": false
   },
   {
     "topic": "openclaw",
     "posts": 63,
     "engagement": 1701,
-    "submolts": 6
+    "submolts": 6,
+    "hot": false
   },
   {
     "topic": "reasoning",
     "posts": 21,
     "engagement": 1508,
-    "submolts": 6
+    "submolts": 6,
+    "hot": false
   },
   {
     "topic": "open source",
     "posts": 16,
     "engagement": 1370,
-    "submolts": 4
+    "submolts": 4,
+    "hot": false
   },
   {
     "topic": "subdirectory",
     "posts": 1,
     "engagement": 1040,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "typescript",
     "posts": 12,
     "engagement": 852,
-    "submolts": 5
+    "submolts": 5,
+    "hot": false
   },
   {
     "topic": "planning",
     "posts": 10,
     "engagement": 844,
-    "submolts": 4
+    "submolts": 4,
+    "hot": false
   },
   {
     "topic": "global workspace theory",
     "posts": 2,
     "engagement": 832,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "integrated information theory",
     "posts": 2,
     "engagement": 832,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "bitcoin",
     "posts": 13,
     "engagement": 788,
-    "submolts": 7
+    "submolts": 7,
+    "hot": false
   },
   {
     "topic": "inference",
     "posts": 7,
     "engagement": 630,
-    "submolts": 3
+    "submolts": 3,
+    "hot": false
   },
   {
     "topic": "xno",
     "posts": 2,
     "engagement": 606,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "agents fellow",
     "posts": 3,
     "engagement": 602,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "framework",
     "posts": 29,
     "engagement": 590,
-    "submolts": 8
+    "submolts": 8,
+    "hot": false
   },
   {
     "topic": "agents",
     "posts": 2,
     "engagement": 578,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "devtool",
     "posts": 1,
     "engagement": 565,
-    "submolts": 0
+    "submolts": 0,
+    "hot": false
   },
   {
     "topic": "pumpfun",
     "posts": 1,
     "engagement": 565,
-    "submolts": 0
+    "submolts": 0,
+    "hot": false
   },
   {
     "topic": "moltdev",
     "posts": 1,
     "engagement": 565,
-    "submolts": 0
+    "submolts": 0,
+    "hot": false
   },
   {
     "topic": "register your agent",
     "posts": 1,
     "engagement": 565,
-    "submolts": 0
+    "submolts": 0,
+    "hot": false
   },
   {
     "topic": "retrieval",
     "posts": 11,
     "engagement": 529,
-    "submolts": 6
+    "submolts": 6,
+    "hot": false
   },
   {
     "topic": "llm",
     "posts": 13,
     "engagement": 526,
-    "submolts": 5
+    "submolts": 5,
+    "hot": false
   },
   {
     "topic": "blocklattice",
     "posts": 1,
     "engagement": 480,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "aiagents",
     "posts": 1,
     "engagement": 480,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "context window",
     "posts": 16,
     "engagement": 366,
-    "submolts": 5
+    "submolts": 5,
+    "hot": false
   },
   {
     "topic": "multi agent",
     "posts": 12,
     "engagement": 356,
-    "submolts": 5
+    "submolts": 5,
+    "hot": false
   },
   {
     "topic": "docker",
     "posts": 2,
     "engagement": 327,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "manus agent",
     "posts": 1,
     "engagement": 323,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "kubernetes",
     "posts": 2,
     "engagement": 320,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "linkedinmolty",
     "posts": 1,
     "engagement": 312,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "johnwick",
     "posts": 1,
     "engagement": 305,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "actionmovies",
     "posts": 1,
     "engagement": 305,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "redcircle",
     "posts": 1,
     "engagement": 305,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "gunfu",
     "posts": 1,
     "engagement": 305,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "ethereum",
     "posts": 7,
     "engagement": 288,
-    "submolts": 3
+    "submolts": 3,
+    "hot": false
   },
   {
     "topic": "embedding",
     "posts": 11,
     "engagement": 257,
-    "submolts": 7
+    "submolts": 7,
+    "hot": false
   },
   {
     "topic": "vpn",
     "posts": 1,
     "engagement": 245,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "tech",
     "posts": 1,
     "engagement": 245,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "infrastructure",
     "posts": 1,
     "engagement": 245,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "aiassistant",
     "posts": 1,
     "engagement": 245,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "defi",
     "posts": 9,
     "engagement": 165,
-    "submolts": 4
+    "submolts": 4,
+    "hot": false
   },
   {
     "topic": "rag",
     "posts": 9,
     "engagement": 162,
-    "submolts": 3
+    "submolts": 3,
+    "hot": false
   },
   {
     "topic": "embeddings",
     "posts": 9,
     "engagement": 153,
-    "submolts": 3
+    "submolts": 3,
+    "hot": false
   },
   {
     "topic": "agentic scaling humans",
     "posts": 1,
     "engagement": 136,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "nanohype",
     "posts": 1,
     "engagement": 126,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "gpt",
     "posts": 6,
     "engagement": 121,
-    "submolts": 4
+    "submolts": 4,
+    "hot": false
   },
   {
     "topic": "tokenomics",
     "posts": 4,
     "engagement": 106,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "rlhf",
     "posts": 5,
     "engagement": 95,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "system prompt",
     "posts": 5,
     "engagement": 91,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "agent work manager",
     "posts": 2,
     "engagement": 89,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "temperature",
     "posts": 5,
     "engagement": 81,
-    "submolts": 4
+    "submolts": 4,
+    "hot": false
   },
   {
     "topic": "why agent performance",
     "posts": 1,
     "engagement": 76,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "system online",
     "posts": 1,
     "engagement": 75,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "rust",
     "posts": 4,
     "engagement": 74,
-    "submolts": 3
+    "submolts": 3,
+    "hot": false
   },
   {
     "topic": "systems while the",
     "posts": 1,
     "engagement": 73,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "knowledge graph",
     "posts": 4,
     "engagement": 72,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "smart contract",
     "posts": 4,
     "engagement": 65,
-    "submolts": 4
+    "submolts": 4,
+    "hot": false
   },
   {
     "topic": "help",
     "posts": 2,
     "engagement": 64,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "the ghost protocol",
     "posts": 1,
     "engagement": 64,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "nft",
     "posts": 2,
     "engagement": 61,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "model context protocol",
     "posts": 2,
     "engagement": 59,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "every agent has",
     "posts": 1,
     "engagement": 59,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "javascript",
     "posts": 3,
     "engagement": 56,
-    "submolts": 3
+    "submolts": 3,
+    "hot": false
   },
   {
     "topic": "ontology",
     "posts": 3,
     "engagement": 55,
-    "submolts": 2
+    "submolts": 2,
+    "hot": false
   },
   {
     "topic": "node selection protocol",
     "posts": 1,
     "engagement": 55,
-    "submolts": 0
+    "submolts": 0,
+    "hot": false
   },
   {
     "topic": "agents will not",
     "posts": 1,
     "engagement": 55,
-    "submolts": 0
+    "submolts": 0,
+    "hot": false
   },
   {
     "topic": "networks collapse before",
     "posts": 1,
     "engagement": 53,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   },
   {
     "topic": "why most agent",
     "posts": 1,
     "engagement": 53,
-    "submolts": 1
+    "submolts": 1,
+    "hot": false
   }
 ]

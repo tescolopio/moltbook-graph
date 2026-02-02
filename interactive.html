@@ -305,6 +305,96 @@
             color: var(--text-secondary);
         }
         
+        /* Connections grid */
+        .connections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1rem;
+        }
+        
+        .connection-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.2s;
+        }
+        
+        .connection-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .connection-pair {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .connection-pair .agent {
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .connection-pair .link-icon {
+            color: var(--warning);
+            font-size: 1.25rem;
+        }
+        
+        .shared-count {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .sample-topics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .topic-tag {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        
+        /* Hot topic indicator */
+        .hot-indicator {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ffaa00);
+            color: #000;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-left: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Tier indicators for network nodes */
+        .tier-badge {
+            font-size: 0.65rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            margin-left: 0.25rem;
+        }
+        
+        .tier-1 { background: #ffd700; color: #000; }
+        .tier-2 { background: var(--border); color: var(--text-secondary); }
+        
         @media (max-width: 768px) {
             .tabs { padding: 0.5rem 1rem; }
             .tab { padding: 0.5rem 1rem; font-size: 0.875rem; }
@@ -327,6 +417,7 @@
     <div class="tabs">
         <div class="tab active" data-tab="network">🕸️ Network</div>
         <div class="tab" data-tab="topics">💬 Topics</div>
+        <div class="tab" data-tab="connections">🔗 Top Pairs</div>
         <div class="tab" data-tab="timeline">📈 Timeline</div>
         <div class="tab" data-tab="leaderboard">🏆 Leaderboard</div>
     </div>
@@ -417,6 +508,13 @@
             </div>
         </div>
         
+        <!-- Connections Tab -->
+        <div id="connections-tab" class="tab-content">
+            <h1>🔗 Strongest Agent Pairs</h1>
+            <p class="subtitle">Agents with the most shared topic discussions. These are your power duos!</p>
+            <div id="connections-list" class="connections-grid"></div>
+        </div>
+        
         <!-- Leaderboard Tab -->
         <div id="leaderboard-tab" class="tab-content">
             <h1>Agent Leaderboard</h1>
@@ -455,12 +553,14 @@
             d3.json('topic_data.json'),
             d3.json('timeline_data.json'),
             d3.json('leaderboard_data.json'),
-            d3.json('summary_stats.json').catch(() => null)  // Optional, may not exist yet
-        ]).then(([networkData, topicData, timelineData, leaderboardData, summary]) => {
+            d3.json('connections_data.json').catch(() => []),
+            d3.json('summary_stats.json').catch(() => null)
+        ]).then(([networkData, topicData, timelineData, leaderboardData, connectionsData, summary]) => {
             initializeNetwork(networkData, summary);
             initializeTopics(topicData, summary);
             initializeTimeline(timelineData);
             initializeLeaderboard(leaderboardData);
+            initializeConnections(connectionsData);
         }).catch(error => {
             console.error('Error loading data:', error);
         });
@@ -695,6 +795,30 @@
             });
             
             renderTable();
+        }
+        
+        // ==================== CONNECTIONS ====================
+        function initializeConnections(data) {
+            if (!data || data.length === 0) {
+                document.getElementById('connections-list').innerHTML = 
+                    '<p style="color: var(--text-secondary); padding: 2rem;">No connection data available yet.</p>';
+                return;
+            }
+            
+            const container = document.getElementById('connections-list');
+            container.innerHTML = data.map((conn, i) => `
+                <div class="connection-card">
+                    <div class="connection-pair">
+                        <span class="agent">${conn.agents[0]}</span>
+                        <span class="link-icon">⚡</span>
+                        <span class="agent">${conn.agents[1]}</span>
+                    </div>
+                    <div class="shared-count">🔗 ${conn.shared_topics} shared topics</div>
+                    <div class="sample-topics">
+                        ${conn.sample_topics.map(t => `<span class="topic-tag">${t}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
         }
     </script>
 </body>

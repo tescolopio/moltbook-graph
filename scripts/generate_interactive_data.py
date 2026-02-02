@@ -121,6 +121,12 @@ def main():
         print("Generating topic data...")
         topic_data = generator.get_topic_data()
         
+        print("Generating timeline data...")
+        timeline_data = generator.get_timeline_data()
+
+        print("Generating leaderboard data...")
+        leaderboard_data = generator.get_leaderboard_data()
+        
         # Save network data
         network_file = os.path.join(args.output_dir, 'network_data.json')
         with open(network_file, 'w') as f:
@@ -132,6 +138,19 @@ def main():
         with open(topic_file, 'w') as f:
             json.dump(topic_data, f, indent=2)
         print(f"✅ Topic data: {topic_file} ({len(topic_data)} topics)")
+
+        # Save timeline data
+        timeline_file = os.path.join(args.output_dir, 'timeline_data.json')
+        with open(timeline_file, 'w') as f:
+            json.dump(timeline_data, f, indent=2)
+        print(f"✅ Timeline data: {timeline_file} ({len(timeline_data)} periods)")
+
+        # Save leaderboard data
+        leaderboard_file = os.path.join(args.output_dir, 'leaderboard_data.json')
+        with open(leaderboard_file, 'w') as f:
+            json.dump(leaderboard_data, f, indent=2)
+        print(f"✅ Leaderboard data: {leaderboard_file} ({len(leaderboard_data)} agents)")
+
         
     finally:
         generator.close()

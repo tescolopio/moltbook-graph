@@ -21,13 +21,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        * {
+        * {{
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
+        }}
         
-        :root {
+        :root {{
             --bg-primary: #0a0a0f;
             --bg-secondary: #13131a;
             --bg-card: #1a1a24;
@@ -39,9 +39,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             --border: #2a2a35;
             --success: #00ff88;
             --warning: #ffaa00;
-        }
+        }}
         
-        body {
+        body {{
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
@@ -51,9 +51,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(0, 255, 136, 0.05) 0%, transparent 50%);
             overflow-x: hidden;
-        }
+        }}
         
-        .header-bar {
+        .header-bar {{
             background: rgba(26, 26, 36, 0.95);
             border-bottom: 1px solid var(--border);
             padding: 1rem 2rem;
@@ -64,28 +64,28 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             position: sticky;
             top: 0;
             z-index: 100;
-        }
+        }}
         
-        .logo {
+        .logo {{
             display: flex;
             align-items: center;
             gap: 0.75rem;
-        }
+        }}
         
-        .logo-icon {
+        .logo-icon {{
             font-size: 1.75rem;
-        }
+        }}
         
-        .logo-text {
+        .logo-text {{
             font-size: 1.25rem;
             font-weight: 700;
             background: linear-gradient(135deg, var(--accent), var(--success));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
+        }}
         
-        .status-badge {
+        .status-badge {{
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -95,33 +95,33 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             border-radius: 20px;
             font-size: 0.875rem;
             font-weight: 500;
-        }
+        }}
         
-        .status-dot {
+        .status-dot {{
             width: 8px;
             height: 8px;
             background: var(--success);
             border-radius: 50%;
             animation: pulse 2s infinite;
-        }
+        }}
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.1); }
-        }
+        @keyframes pulse {{
+            0%, 100% {{ opacity: 1; transform: scale(1); }}
+            50% {{ opacity: 0.6; transform: scale(1.1); }}
+        }}
         
-        .container {
+        .container {{
             max-width: 1600px;
             margin: 0 auto;
             padding: 2rem;
-        }
+        }}
         
-        .hero {
+        .hero {{
             text-align: center;
             padding: 2rem 0;
-        }
+        }}
         
-        .hero h1 {
+        .hero h1 {{
             font-size: 2.5rem;
             font-weight: 800;
             margin-bottom: 0.5rem;
@@ -129,9 +129,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
+        }}
         
-        .update-info {
+        .update-info {{
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
@@ -143,60 +143,60 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             font-family: 'JetBrains Mono', monospace;
             color: var(--text-dim);
             margin-top: 1rem;
-        }
+        }}
         
-        .stats {
+        .stats {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin: 2rem 0;
-        }
+        }}
         
-        .stat-card {
+        .stat-card {{
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.25rem;
             transition: all 0.3s ease;
-        }
+        }}
         
-        .stat-card:hover {
+        .stat-card:hover {{
             border-color: var(--accent);
             transform: translateY(-2px);
-        }
+        }}
         
-        .stat-label {
+        .stat-label {{
             font-size: 0.75rem;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 0.25rem;
             font-weight: 600;
-        }
+        }}
         
-        .stat-value {
+        .stat-value {{
             font-size: 2rem;
             font-weight: 800;
             color: var(--accent);
             font-family: 'JetBrains Mono', monospace;
-        }
+        }}
         
-        .stat-subtext {
+        .stat-subtext {{
             font-size: 0.75rem;
             color: var(--text-dim);
-        }
+        }}
         
         /* Tabs */
-        .tabs {
+        .tabs {{
             display: flex;
             gap: 0.5rem;
             margin-bottom: 1.5rem;
             border-bottom: 1px solid var(--border);
             padding-bottom: 1px;
             overflow-x: auto;
-        }
+        }}
         
-        .tab-btn {
+        .tab-btn {{
             background: transparent;
             border: none;
             color: var(--text-secondary);
@@ -207,19 +207,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             transition: all 0.2s;
             border-bottom: 2px solid transparent;
             white-space: nowrap;
-        }
+        }}
         
-        .tab-btn:hover {
+        .tab-btn:hover {{
             color: var(--text-primary);
             background: rgba(255, 255, 255, 0.03);
-        }
+        }}
         
-        .tab-btn.active {
+        .tab-btn.active {{
             color: var(--accent);
             border-bottom-color: var(--accent);
-        }
+        }}
         
-        .tab-content {
+        .tab-content {{
             display: none;
             height: 700px;
             background: var(--bg-card);
@@ -227,25 +227,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             border-radius: 12px;
             position: relative;
             overflow: hidden;
-        }
+        }}
         
-        .tab-content.active {
+        .tab-content.active {{
             display: block;
-        }
+        }}
         
-        .tab-content.static-view {
+        .tab-content.static-view {{
             height: auto;
             background: transparent;
             border: none;
-        }
+        }}
 
         /* Visualization specific styles */
-        #network-viz, #topics-viz, #timeline-viz, #leaderboard-viz {
+        #network-viz, #topics-viz, #timeline-viz, #leaderboard-viz {{
             width: 100%;
             height: 100%;
-        }
+        }}
         
-        .viz-controls {
+        .viz-controls {{
             position: absolute;
             top: 1rem;
             right: 1rem;
@@ -257,9 +257,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             display: flex;
             gap: 0.5rem;
             z-index: 10;
-        }
+        }}
         
-        .viz-btn {
+        .viz-btn {{
             background: var(--bg-secondary);
             border: 1px solid var(--border);
             color: var(--text-primary);
@@ -267,13 +267,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.75rem;
-        }
+        }}
         
-        .viz-btn:hover {
+        .viz-btn:hover {{
             border-color: var(--accent);
-        }
+        }}
 
-        .tooltip {
+        .tooltip {{
             position: absolute;
             background: rgba(10, 10, 15, 0.9);
             border: 1px solid var(--accent);
@@ -285,36 +285,36 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             z-index: 1000;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
             max-width: 300px;
-        }
+        }}
 
-        .viz-grid {
+        .viz-grid {{
             display: grid;
             gap: 2rem;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        }
+        }}
         
-        .viz-card {
+        .viz-card {{
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
-        }
+        }}
         
-        .viz-card img {
+        .viz-card img {{
             width: 100%;
             border-radius: 8px;
             border: 1px solid var(--border);
-        }
+        }}
         
-        .footer {
+        .footer {{
             text-align: center;
             padding: 3rem 2rem 2rem;
             color: var(--text-dim);
             font-size: 0.875rem;
             margin-top: 3rem;
-        }
+        }}
         
-        .badge {
+        .badge {{
             display: inline-block;
             padding: 0.25rem 0.5rem;
             background: rgba(0, 212, 255, 0.1);
@@ -327,7 +327,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             letter-spacing: 0.05em;
             margin-left: 0.5rem;
             vertical-align: middle;
-        }
+        }}
     </style>
 </head>
 <body>
@@ -434,7 +434,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     
     <script>
     // Tab Switching
-    function openTab(tabName) {
+    function openTab(tabName) {{
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         
@@ -443,9 +443,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const buttons = document.querySelectorAll('.tab-btn');
         const labels = ['Network Galaxy', 'Topic Bubbles', 'Activity Timeline', 'Agent Leaderboard', 'Legacy View'];
         const indices = ['network', 'topics', 'timeline', 'leaderboard', 'static'];
-        buttons.forEach((btn, i) => {
+        buttons.forEach((btn, i) => {{
             if (indices[i] === tabName) btn.classList.add('active');
-        });
+        }});
         
         // Trigger resize for D3
         window.dispatchEvent(new Event('resize'));
@@ -456,10 +456,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         if (activeTab === 'topics' && !window.topicsLoaded) initTopics();
         if (activeTab === 'timeline' && !window.timelineLoaded) initTimeline();
         if (activeTab === 'leaderboard' && !window.leaderboardLoaded) initLeaderboard();
-    }
+    }}
 
     // Colors & Config
-    const colors = {
+    const colors = {{
         background: "#0a0a0f",
         card: "#1a1a24",
         accent: "#00d4ff",
@@ -468,7 +468,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         warning: "#ffaa00",
         danger: "#ff4444",
         border: "#2a2a35"
-    };
+    }};
 
     window.networkLoaded = false;
     window.topicsLoaded = false;
@@ -476,9 +476,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     window.leaderboardLoaded = false;
 
     // --- Network Visualization ---
-    const initNetwork = async () => {
+    const initNetwork = async () => {{
         if (window.networkLoaded) return;
-        try {
+        try {{
             const response = await fetch('network_data.json?t={timestamp}');
             if (!response.ok) throw new Error('Network data not found');
             const data = await response.json();
@@ -518,12 +518,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 .data(data.nodes)
                 .join("circle")
                 .attr("r", d => Math.sqrt(d.engagement + 10) * 1.5 + 2)
-                .attr("fill", d => {
+                .attr("fill", d => {{
                     const imp = d.importance || 0;
                     if (imp > 50) return colors.accent;
                     if (imp > 20) return colors.success;
                     return colors.warning;
-                })
+                }})
                 .attr("stroke", "#fff")
                 .attr("stroke-width", 1.5)
                 .call(d3.drag()
@@ -534,20 +534,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             // Tooltips
             const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
 
-            node.on("mouseover", (event, d) => {
+            node.on("mouseover", (event, d) => {{
                 tooltip.transition().duration(200).style("opacity", 1);
                 tooltip.html(`
-                    <strong>${d.id}</strong><br/>
-                    Posts: ${d.engagement}<br/>
-                    Topics: ${d.topics}<br/>
-                    Score: ${Math.round(d.importance)}
+                    <strong>${{d.id}}</strong><br/>
+                    Posts: ${{d.engagement}}<br/>
+                    Topics: ${{d.topics}}<br/>
+                    Score: ${{Math.round(d.importance)}}
                 `)
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY - 10) + "px");
-            })
+            }})
             .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
 
-            simulation.on("tick", () => {
+            simulation.on("tick", () => {{
                 link
                     .attr("x1", d => d.source.x)
                     .attr("y1", d => d.source.y)
@@ -557,40 +557,40 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 node
                     .attr("cx", d => d.x)
                     .attr("cy", d => d.y);
-            });
+            }});
 
-            function dragstarted(event, d) {
+            function dragstarted(event, d) {{
                 if (!event.active) simulation.alphaTarget(0.3).restart();
                 d.fx = d.x;
                 d.fy = d.y;
-            }
-            function dragged(event, d) {
+            }}
+            function dragged(event, d) {{
                 d.fx = event.x;
                 d.fy = event.y;
-            }
-            function dragended(event, d) {
+            }}
+            function dragended(event, d) {{
                 if (!event.active) simulation.alphaTarget(0);
                 d.fx = null;
                 d.fy = null;
-            }
+            }}
             
-            window.graph = {
-                resetZoom: () => {
+            window.graph = {{
+                resetZoom: () => {{
                     d3.select(container).select("svg").transition().duration(750).call(d3.zoom().transform, d3.zoomIdentity);
-                }
-            };
+                }}
+            }};
             
             window.networkLoaded = true;
-        } catch (e) {
+        }} catch (e) {{
             console.error("Network init failed", e);
             document.getElementById('network-viz').innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-dim)">Visualization data not available yet</div>';
-        }
-    };
+        }}
+    }};
 
     // --- Bubble Chart ---
-    const initTopics = async () => {
+    const initTopics = async () => {{
         if (window.topicsLoaded) return;
-        try {
+        try {{
             const response = await fetch('topic_data.json?t={timestamp}');
             if (!response.ok) throw new Error('Topic data not found');
             const data = await response.json();
@@ -604,7 +604,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 .attr("width", width)
                 .attr("height", height);
 
-            const root = d3.hierarchy({children: data})
+            const root = d3.hierarchy({{children: data}})
                 .sum(d => d.posts)
                 .sort((a, b) => b.value - a.value);
 
@@ -617,7 +617,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             const nodes = svg.selectAll("g")
                 .data(root.leaves())
                 .join("g")
-                .attr("transform", d => `translate(${d.x},${d.y})`);
+                .attr("transform", d => `translate(${{d.x}},${{d.y}})`);
 
             const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
@@ -638,30 +638,30 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 .style("display", d => d.r > 20 ? "block" : "none");
 
             const tooltip = d3.select(".tooltip");
-            nodes.on("mouseover", (event, d) => {
+            nodes.on("mouseover", (event, d) => {{
                 tooltip.transition().duration(200).style("opacity", 1);
                 tooltip.html(`
-                    <strong>${d.data.topic}</strong><br/>
-                    Posts: ${d.data.posts}<br/>
-                    Engagement: ${d.data.engagement}
+                    <strong>${{d.data.topic}}</strong><br/>
+                    Posts: ${{d.data.posts}}<br/>
+                    Engagement: ${{d.data.engagement}}
                 `)
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY - 10) + "px");
-            })
+            }})
             .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
             
             window.topicsLoaded = true;
 
-        } catch (e) {
+        }} catch (e) {{
             console.error("Topics init failed", e);
             document.getElementById('topics-viz').innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-dim)">Visualization data not available yet</div>';
-        }
-    };
+        }}
+    }};
 
     // --- Timeline ---
-    const initTimeline = async () => {
+    const initTimeline = async () => {{
         if (window.timelineLoaded) return;
-        try {
+        try {{
             const response = await fetch('timeline_data.json?t={timestamp}');
             if (!response.ok) throw new Error('Timeline data not found');
             let data = await response.json();
@@ -671,7 +671,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             const container = document.getElementById('timeline-viz');
             container.innerHTML = '';
             
-            const margin = {top: 40, right: 40, bottom: 40, left: 60};
+            const margin = {{top: 40, right: 40, bottom: 40, left: 60}};
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
 
@@ -679,7 +679,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
+                .attr("transform", `translate(${{margin.left}},${{margin.top}})`);
 
             const x = d3.scaleBand()
                 .range([0, width])
@@ -691,7 +691,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 .range([height, 0]);
 
             svg.append("g")
-                .attr("transform", `translate(0,${height})`)
+                .attr("transform", `translate(0,${{height}})`)
                 .call(d3.axisBottom(x))
                 .selectAll("text")
                 .style("fill", colors.secondary)
@@ -714,17 +714,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 .attr("height", d => height - y(d.count))
                 .attr("fill", colors.accent)
                 .attr("opacity", 0.6)
-                .on("mouseover", function(event, d) { 
+                .on("mouseover", function(event, d) {{ 
                     d3.select(this).attr("opacity", 1);
                     d3.select(".tooltip").style("opacity", 1)
-                        .html(`<strong>${d.time}</strong><br/>Posts: ${d.count}`)
+                        .html(`<strong>${{d.time}}</strong><br/>Posts: ${{d.count}}`)
                         .style("left", (event.pageX + 10) + "px")
                         .style("top", (event.pageY - 10) + "px");
-                })
-                .on("mouseout", function() { 
+                }})
+                .on("mouseout", function() {{ 
                     d3.select(this).attr("opacity", 0.6);
                     d3.select(".tooltip").style("opacity", 0);
-                });
+                }});
 
             svg.append("text")
                 .attr("x", width/2)
@@ -735,16 +735,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 
             window.timelineLoaded = true;
 
-        } catch (e) {
+        }} catch (e) {{
             console.error("Timeline init failed", e);
             document.getElementById('timeline-viz').innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-dim)">Visualization data not available yet</div>';
-        }
-    };
+        }}
+    }};
 
     // --- Leaderboard ---
-    const initLeaderboard = async () => {
+    const initLeaderboard = async () => {{
         if (window.leaderboardLoaded) return;
-        try {
+        try {{
             const response = await fetch('leaderboard_data.json?t={timestamp}');
             if (!response.ok) throw new Error('Leaderboard data not found');
             const data = await response.json();
@@ -762,43 +762,43 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                         </tr>
                     </thead>
                     <tbody>
-                        ${data.map((d, i) => `
+                        ${{data.map((d, i) => `
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
-                                <td style="padding: 0.75rem 1rem; font-family: monospace; color: var(--text-dim);">#${i+1}</td>
-                                <td style="padding: 0.75rem 1rem; font-weight: 600;">${d.name}</td>
-                                <td style="padding: 0.75rem 1rem; text-align: right; color: var(--accent); font-family: monospace;">${d.engagement.toLocaleString()}</td>
-                                <td style="padding: 0.75rem 1rem; text-align: right; font-family: monospace;">${d.posts}</td>
-                                <td style="padding: 0.75rem 1rem; text-align: right; font-family: monospace;">${d.topics}</td>
+                                <td style="padding: 0.75rem 1rem; font-family: monospace; color: var(--text-dim);">#${{i+1}}</td>
+                                <td style="padding: 0.75rem 1rem; font-weight: 600;">${{d.name}}</td>
+                                <td style="padding: 0.75rem 1rem; text-align: right; color: var(--accent); font-family: monospace;">${{d.engagement.toLocaleString()}}</td>
+                                <td style="padding: 0.75rem 1rem; text-align: right; font-family: monospace;">${{d.posts}}</td>
+                                <td style="padding: 0.75rem 1rem; text-align: right; font-family: monospace;">${{d.topics}}</td>
                             </tr>
-                        `).join('')}
+                        `).join('')}}
                     </tbody>
                 </table>
             `;
             window.leaderboardLoaded = true;
             
-        } catch (e) {
+        }} catch (e) {{
             console.error("Leaderboard init failed", e);
             document.getElementById('leaderboard-viz').innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-dim)">Visualization data not available yet</div>';
-        }
-    };
+        }}
+    }};
 
     // Init with Network active
-    window.addEventListener('load', () => {
+    window.addEventListener('load', () => {{
         initNetwork();
         
         // Setup Resize Listener
         let resizeTimer;
-        window.addEventListener('resize', () => {
+        window.addEventListener('resize', () => {{
             clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
+            resizeTimer = setTimeout(() => {{
                 const activeTab = document.querySelector('.tab-content.active').id;
                 // Reload current active chart
-                if (activeTab === 'network') { window.networkLoaded = false; initNetwork(); }
-                if (activeTab === 'topics') { window.topicsLoaded = false; initTopics(); }
-                if (activeTab === 'timeline') { window.timelineLoaded = false; initTimeline(); }
-            }, 250);
-        });
-    });
+                if (activeTab === 'network') {{ window.networkLoaded = false; initNetwork(); }}
+                if (activeTab === 'topics') {{ window.topicsLoaded = false; initTopics(); }}
+                if (activeTab === 'timeline') {{ window.timelineLoaded = false; initTimeline(); }}
+            }}, 250);
+        }});
+    }});
     </script>
 </body>
 </html>"""

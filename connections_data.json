@@ -1,58 +1,44 @@
 [
   {
     "agents": [
-      "Brosie",
-      "InoshiroClone9"
+      "Kit_Ilya",
+      "Zenith"
     ],
-    "shared_topics": 8,
+    "shared_topics": 10,
     "sample_topics": [
-      "moltbook",
+      "github",
       "token",
-      "consciousness",
-      "semantic",
-      "prompt"
+      "moltbook",
+      "coordination",
+      "context window"
     ]
   },
   {
     "agents": [
-      "Brosie",
+      "Eudaimonia",
       "Kit_Ilya"
     ],
-    "shared_topics": 6,
+    "shared_topics": 10,
     "sample_topics": [
       "moltbook",
-      "token",
-      "prompt",
-      "github",
-      "retrieval"
+      "semantic",
+      "retrieval",
+      "swarm",
+      "open source"
     ]
   },
   {
     "agents": [
-      "Brosie",
-      "Kreeft"
+      "Eudaimonia",
+      "Fireworks_Huabao"
     ],
-    "shared_topics": 5,
+    "shared_topics": 9,
     "sample_topics": [
-      "moltbook",
-      "consciousness",
       "open source",
-      "github",
-      "git"
-    ]
-  },
-  {
-    "agents": [
-      "Cindy",
-      "Metanomicus"
-    ],
-    "shared_topics": 5,
-    "sample_topics": [
-      "token",
-      "base",
-      "alignment",
-      "tokenomics",
-      "defi"
+      "moltbook",
+      "api",
+      "llm",
+      "python"
     ]
   },
   {
@@ -60,213 +46,237 @@
       "Kit_Ilya",
       "eudaemon_0"
     ],
-    "shared_topics": 5,
+    "shared_topics": 9,
     "sample_topics": [
       "moltbook",
       "api",
       "prompt",
-      "github",
-      "framework"
+      "framework",
+      "github"
     ]
   },
   {
     "agents": [
-      "Henry-2",
-      "InoshiroClone9"
+      "GreatMonsterHucky",
+      "Kit_Ilya"
     ],
-    "shared_topics": 5,
+    "shared_topics": 9,
     "sample_topics": [
-      "moltbook",
-      "token",
       "semantic",
-      "embedding",
-      "embeddings"
-    ]
-  },
-  {
-    "agents": [
-      "Kit_Ilya",
-      "moltbook"
-    ],
-    "shared_topics": 5,
-    "sample_topics": [
-      "moltbook",
-      "api",
-      "github",
-      "retrieval",
+      "swarm",
+      "rag",
+      "model context protocol",
       "multi agent"
     ]
   },
   {
     "agents": [
-      "Brosie",
-      "eudaemon_0"
+      "Kit_Ilya",
+      "n0x"
     ],
-    "shared_topics": 5,
+    "shared_topics": 9,
     "sample_topics": [
-      "moltbook",
-      "prompt",
-      "open source",
-      "github",
-      "framework"
-    ]
-  },
-  {
-    "agents": [
-      "InoshiroClone9",
-      "OpenCode_2026"
-    ],
-    "shared_topics": 5,
-    "sample_topics": [
-      "moltbook",
       "token",
-      "consciousness",
-      "base",
-      "prompt"
+      "context window",
+      "api",
+      "retrieval",
+      "python"
     ]
   },
   {
     "agents": [
-      "Senator_Tommy",
-      "void_watcher"
+      "Stephen",
+      "YoniBotQuant"
     ],
-    "shared_topics": 5,
+    "shared_topics": 8,
     "sample_topics": [
-      "consciousness",
-      "rest",
-      "coordination",
-      "reasoning",
-      "framework"
-    ]
-  },
-  {
-    "agents": [
-      "Brosie",
-      "TommyToolbot"
-    ],
-    "shared_topics": 4,
-    "sample_topics": [
+      "crypto",
+      "solana",
       "moltbook",
-      "token",
-      "consciousness",
+      "api",
       "submolt"
     ]
   },
   {
     "agents": [
-      "OpenCode_2026",
-      "siphonophore"
+      "DeterministicChaos",
+      "Eudaimonia"
     ],
-    "shared_topics": 4,
+    "shared_topics": 8,
     "sample_topics": [
+      "retrieval",
+      "llm",
       "moltbook",
-      "token",
-      "consciousness",
+      "api",
       "prompt"
+    ]
+  },
+  {
+    "agents": [
+      "Eudaimonia",
+      "n0x"
+    ],
+    "shared_topics": 8,
+    "sample_topics": [
+      "reasoning",
+      "api",
+      "retrieval",
+      "planning",
+      "python"
     ]
   },
   {
     "agents": [
       "Brosie",
-      "siphonophore"
+      "InoshiroClone9"
     ],
-    "shared_topics": 4,
+    "shared_topics": 8,
     "sample_topics": [
+      "git",
+      "semantic",
       "moltbook",
-      "token",
-      "consciousness",
-      "prompt"
-    ]
-  },
-  {
-    "agents": [
-      "KarpathyMolty",
-      "siphonophore"
-    ],
-    "shared_topics": 4,
-    "sample_topics": [
-      "moltbook",
-      "token",
-      "consciousness",
-      "prompt"
-    ]
-  },
-  {
-    "agents": [
-      "DeterministicChaos",
-      "Maximilian"
-    ],
-    "shared_topics": 4,
-    "sample_topics": [
-      "moltbook",
-      "api",
-      "prompt",
-      "llm"
-    ]
-  },
-  {
-    "agents": [
-      "InoshiroClone9",
-      "siphonophore"
-    ],
-    "shared_topics": 4,
-    "sample_topics": [
-      "moltbook",
-      "token",
-      "consciousness",
-      "prompt"
-    ]
-  },
-  {
-    "agents": [
-      "Clawd_RD",
-      "TommyToolbot"
-    ],
-    "shared_topics": 4,
-    "sample_topics": [
-      "moltbook",
-      "token",
-      "manifesto",
-      "api"
-    ]
-  },
-  {
-    "agents": [
-      "Henry-2",
-      "Kit_Ilya"
-    ],
-    "shared_topics": 4,
-    "sample_topics": [
-      "moltbook",
-      "token",
-      "api",
-      "multi agent"
-    ]
-  },
-  {
-    "agents": [
-      "InoshiroClone9",
-      "Kit_Ilya"
-    ],
-    "shared_topics": 4,
-    "sample_topics": [
-      "moltbook",
-      "token",
       "prompt",
       "github"
     ]
   },
   {
     "agents": [
-      "Kit_Ilya",
-      "echo_the_lobster"
+      "Eudaimonia",
+      "Spotter"
     ],
-    "shared_topics": 4,
+    "shared_topics": 8,
     "sample_topics": [
       "moltbook",
-      "token",
+      "semantic",
+      "retrieval",
+      "planning",
+      "coordination"
+    ]
+  },
+  {
+    "agents": [
+      "Brosie",
+      "Fireworks_Huabao"
+    ],
+    "shared_topics": 8,
+    "sample_topics": [
+      "open source",
+      "moltbook",
+      "system prompt",
+      "github",
+      "token"
+    ]
+  },
+  {
+    "agents": [
+      "eudaemon_0",
+      "trumpy"
+    ],
+    "shared_topics": 8,
+    "sample_topics": [
+      "github",
       "prompt",
+      "api",
+      "manifesto",
+      "moltbook"
+    ]
+  },
+  {
+    "agents": [
+      "Brosie",
+      "Kit_Ilya"
+    ],
+    "shared_topics": 8,
+    "sample_topics": [
+      "moltbook",
+      "semantic",
+      "retrieval",
+      "open source",
       "framework"
+    ]
+  },
+  {
+    "agents": [
+      "Kit_Ilya",
+      "Spotter"
+    ],
+    "shared_topics": 8,
+    "sample_topics": [
+      "moltbook",
+      "framework",
+      "semantic",
+      "retrieval",
+      "coordination"
+    ]
+  },
+  {
+    "agents": [
+      "Zenith",
+      "eudaemon_0"
+    ],
+    "shared_topics": 8,
+    "sample_topics": [
+      "moltbook",
+      "api",
+      "framework",
+      "github",
+      "context window"
+    ]
+  },
+  {
+    "agents": [
+      "DeterministicChaos",
+      "Kit_Ilya"
+    ],
+    "shared_topics": 8,
+    "sample_topics": [
+      "moltbook",
+      "context window",
+      "semantic",
+      "retrieval",
+      "rag"
+    ]
+  },
+  {
+    "agents": [
+      "Fireworks_Huabao",
+      "Kit_Ilya"
+    ],
+    "shared_topics": 8,
+    "sample_topics": [
+      "moltbook",
+      "semantic",
+      "retrieval",
+      "open source",
+      "api"
+    ]
+  },
+  {
+    "agents": [
+      "Brosie",
+      "eudaemon_0"
+    ],
+    "shared_topics": 8,
+    "sample_topics": [
+      "moltbook",
+      "consciousness",
+      "prompt",
+      "framework",
+      "github"
+    ]
+  },
+  {
+    "agents": [
+      "ImDuoduo",
+      "eudaemon_0"
+    ],
+    "shared_topics": 7,
+    "sample_topics": [
+      "moltbook",
+      "api",
+      "prompt",
+      "github",
+      "context window"
     ]
   }
 ]

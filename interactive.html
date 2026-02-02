@@ -211,6 +211,10 @@
         .topic-node { cursor: pointer; }
         .topic-link { stroke: var(--border); stroke-opacity: 0.6; }
         .topic-link-highlighted { stroke: var(--accent); stroke-opacity: 1; }
+        .legend-chip { margin-top: 0.5rem; display: grid; gap: 0.35rem; }
+        .legend-bar { height: 10px; border-radius: 999px; background: linear-gradient(90deg, #72efdd, #4895ef, #ff6b6b); border: 1px solid var(--border); }
+        .legend-labels { display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.8rem; }
+        .stat-note { color: var(--text-secondary); margin-top: 0.35rem; font-size: 0.85rem; }
         
         /* Stats grid */
         .stats-grid {
@@ -572,6 +576,12 @@
                     <label>Link Opacity: <span id="topicLinkOpacityValue">0.5</span></label>
                     <input type="range" id="topicLinkOpacity" min="0" max="1" step="0.1" value="0.5">
                 </div>
+                <div class="control-group">
+                    <label>Isolates</label>
+                    <label style="display:flex; align-items:center; gap:0.4rem; color: var(--text-secondary); font-size:0.9rem;">
+                        <input type="checkbox" id="showIsolates"> Show isolates
+                    </label>
+                </div>
             </div>
 
             <svg id="topic-network"></svg>
@@ -583,6 +593,10 @@
                 <div class="network-legend">
                     <h3>Legend</h3>
                     <p>Nodes: topics. Edges: count of agents who posted in both topics. Size: posts/engagement/agents (toggle). Color: engagement gradient. Drag to reposition; scroll to zoom.</p>
+                    <div class="legend-chip">
+                        <div class="legend-bar"></div>
+                        <div class="legend-labels"><span>Lower engagement</span><span>Higher engagement</span></div>
+                    </div>
                 </div>
             </div>
 
@@ -600,6 +614,7 @@
                     <div class="stat-label">Avg Shared Agents</div>
                 </div>
             </div>
+            <p class="stat-note" id="topicIsolateNote"></p>
         </div>
         
         <!-- Topics Tab -->
@@ -1075,6 +1090,7 @@
             function renderTopicNetwork() {
                 const minShared = +document.getElementById('minSharedAgents').value;
                 const linkOpacity = +document.getElementById('topicLinkOpacity').value;
+                const showIsolates = document.getElementById('showIsolates').checked;
 
                 const filteredLinks = data.links.filter(l => (l.weight || l.shared_agents || l.value || 0) >= minShared);
                 const connectedIds = new Set();
@@ -1083,7 +1099,8 @@
                     connectedIds.add(l.target.id || l.target);
                 });
 
-                const filteredNodes = data.nodes.filter(n => connectedIds.size === 0 || connectedIds.has(n.id));
+                const filteredNodes = showIsolates ? data.nodes : data.nodes.filter(n => connectedIds.size === 0 || connectedIds.has(n.id));
+                const hiddenIsolates = showIsolates ? 0 : Math.max(0, data.nodes.length - filteredNodes.length);
 
                 const adj = new Map();
                 filteredLinks.forEach(l => {
@@ -1103,6 +1120,16 @@
                 if (edgeCountEl) edgeCountEl.textContent = filteredLinks.length.toLocaleString();
                 const avgOverlapEl = document.getElementById('topicNetworkAvgOverlap');
                 if (avgOverlapEl) avgOverlapEl.textContent = avgOverlap.toFixed(1);
+                const isolateNote = document.getElementById('topicIsolateNote');
+                if (isolateNote) {
+                    if (showIsolates) {
+                        isolateNote.textContent = 'Isolates shown (topics with no shared agents stay on the canvas).';
+                    } else if (hiddenIsolates > 0) {
+                        isolateNote.textContent = `${hiddenIsolates} isolates hidden by the overlap filter (no shared agents at current threshold).`;
+                    } else {
+                        isolateNote.textContent = '';
+                    }
+                }
 
                 if (summary && summary.total_topics && nodeCountEl) {
                     nodeCountEl.title = `${filteredNodes.length} shown of ${summary.total_topics} total topics`;
@@ -1191,6 +1218,7 @@
             document.getElementById('minSharedAgents').addEventListener('input', e => { document.getElementById('minSharedAgentsValue').textContent = e.target.value; renderTopicNetwork(); });
             document.getElementById('topicNodeSizing').addEventListener('change', renderTopicNetwork);
             document.getElementById('topicLinkOpacity').addEventListener('input', e => { document.getElementById('topicLinkOpacityValue').textContent = e.target.value; d3.selectAll('.topic-link').style('stroke-opacity', e.target.value); });
+            document.getElementById('showIsolates').addEventListener('change', renderTopicNetwork);
             svg.on('click', e => { if (e.target === svg.node()) { d3.selectAll('.topic-link').classed('topic-link-highlighted', false); d3.selectAll('.topic-node').style('opacity', 1); const panel = document.getElementById('topicNodeDetail'); if (panel) { panel.innerHTML = '<h3>Topic details</h3><p>Click a topic to see its metrics and top co-discussed neighbors.</p>'; } } });
 
             renderTopicNetwork();

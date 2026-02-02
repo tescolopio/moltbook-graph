@@ -369,6 +369,52 @@
             margin-bottom: 30px;
         }
 
+        .hbar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: var(--card);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .hbar-row {
+            display: grid;
+            grid-template-columns: 140px 1fr 60px;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .hbar-label {
+            font-weight: 600;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .hbar-bar {
+            position: relative;
+            height: 12px;
+            background: rgba(255, 107, 61, 0.12);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .hbar-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 0;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--accent) 0%, #ff8456 100%);
+            transition: width 0.3s ease;
+        }
+
         .heatmap {
             display: grid;
             grid-template-columns: repeat(24, minmax(12px, 1fr));
@@ -525,6 +571,7 @@
                     <div class="stat-label">Total Engagement</div>
                 </div>
             </div>
+            <a href="interactive.html" style="display:inline-block; margin-top: 10px; color: var(--accent); font-weight:600; text-decoration:none;">Open interactive graph →</a>
         </div>
 
         <!-- Main Areas Tab -->
@@ -563,6 +610,8 @@
             <div class="chart-container" id="timelineChart"></div>
             <h3 style="color: var(--text); margin-top: 10px; margin-bottom: 8px;">Weekly Heatmap (day × hour)</h3>
             <div id="heatmapContainer" class="heatmap"></div>
+            <h3 style="color: var(--text); margin-top: 16px; margin-bottom: 8px;">Topic Mix (Top 10 areas)</h3>
+            <div id="topicMixContainer"></div>
         </div>
 
         <!-- Leaderboard Tab -->
@@ -609,6 +658,7 @@
         let leaderboardSort = 'importance';
         let timelineData = [];
         let heatmapData = [];
+        let topicsData = [];
 
         // Load all data
         async function loadData() {
@@ -635,6 +685,7 @@
                 leaderboardData = leaderboard || [];
                 timelineData = timeline || [];
                 heatmapData = heatmap || [];
+                topicsData = topics || [];
                 renderAreas(hottest);
                 renderPosts(hottest);
                 renderDiscussions(discussions);
@@ -643,6 +694,7 @@
                 renderLeaderboard(sortLeaderboard(leaderboardData, leaderboardSort));
                 renderTimeline(timelineData);
                 renderHeatmap(heatmapData);
+                renderTopicMix(topicsData);
                 updateTime();
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -836,6 +888,30 @@
                 const opacity = scale(cell.count);
                 html += `<div class="heat-cell" data-tooltip="${dayNames[cell.day]} ${cell.hour}:00\n${cell.count} posts" style="background: rgba(255, 107, 61, ${opacity});"></div>`;
             });
+            container.innerHTML = html;
+        }
+
+        function renderTopicMix(topics) {
+            const container = document.getElementById('topicMixContainer');
+            if (!topics || !topics.length) {
+                container.innerHTML = '<div class="loading">No topic data yet</div>';
+                return;
+            }
+
+            const top10 = topics.slice(0, 10);
+            const maxVal = Math.max(...top10.map(t => t.value));
+            let html = '<div class="hbar">';
+            top10.forEach(t => {
+                const width = ((t.value || 0) / (maxVal || 1)) * 100;
+                html += `
+                    <div class="hbar-row">
+                        <div class="hbar-label" title="${t.name}">${t.name}</div>
+                        <div class="hbar-bar"><div class="hbar-fill" style="width: ${width}%;"></div></div>
+                        <div style="text-align:right; color: var(--muted);">${t.value}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
             container.innerHTML = html;
         }
 

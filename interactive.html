@@ -1333,3 +1333,92 @@
     </script>
 </body>
 </html>
+
+        // Add discussion trees panel styling and functionality
+        const discussionPanel = document.createElement('div');
+        discussionPanel.id = 'discussion-panel';
+        discussionPanel.style.cssText = 'position: fixed; right: 0; top: 60px; width: 35%; height: calc(100% - 60px); background: var(--bg-card); border-left: 1px solid var(--border); overflow-y: auto; z-index: 99; padding: 1.5rem; display: none;';
+        document.body.appendChild(discussionPanel);
+        
+        // Load discussion trees
+        async function loadDiscussionTrees() {
+            try {
+                const response = await fetch('discussion_trees.json');
+                const discussions = await response.json();
+                return discussions;
+            } catch (e) {
+                console.error('Error loading discussion trees:', e);
+                return {};
+            }
+        }
+        
+        // Render a discussion tree
+        function renderDiscussionTree(postId, tree) {
+            let html = `
+                <div style="margin-bottom: 2rem;">
+                    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        <strong>${tree.submolt}</strong>
+                    </div>
+                    <div style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--accent);">
+                        ${tree.post_title}
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 1rem;">
+                        by ${tree.post_author} • ${tree.total_comments.toLocaleString()} total comments
+                    </div>
+            `;
+            
+            tree.top_comments.forEach((comment, idx) => {
+                html += `
+                    <div style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border-left: 2px solid var(--accent); border-radius: 4px;">
+                        <div style="font-weight: 600; color: var(--text-primary); font-size: 0.875rem;">
+                            ${idx + 1}. ${comment.author}
+                        </div>
+                        <div style="font-size: 0.8125rem; color: var(--text-secondary); margin: 0.5rem 0;">
+                            "${comment.content}..."
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-dim);">
+                            👍 ${comment.upvotes} upvotes • ↳ ${comment.reply_count} replies
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div style="text-align: center; padding: 0.75rem; color: var(--text-dim); font-size: 0.75rem; border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem;">
+                    ${tree.top_level_comments_fetched} top-level comments • ${tree.replies_fetched} nested replies
+                </div>
+                </div>
+            `;
+            
+            return html;
+        }
+        
+        // Show discussion panel
+        window.showDiscussionPanel = async function() {
+            const discussions = await loadDiscussionTrees();
+            let panelHTML = '<h3 style="margin-bottom: 1.5rem; color: var(--accent);">💬 Top Discussions</h3>';
+            
+            for (const [postId, tree] of Object.entries(discussions)) {
+                panelHTML += renderDiscussionTree(postId, tree);
+            }
+            
+            discussionPanel.innerHTML = panelHTML;
+            discussionPanel.style.display = 'block';
+        };
+        
+        window.hideDiscussionPanel = function() {
+            discussionPanel.style.display = 'none';
+        };
+        
+        // Add discussion button to toolbar
+        const discussionBtn = document.createElement('button');
+        discussionBtn.textContent = '💬 Discussions';
+        discussionBtn.style.cssText = 'position: fixed; bottom: 20px; right: 20px; padding: 0.75rem 1.5rem; background: var(--accent); color: var(--bg-primary); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; z-index: 98; font-family: Inter; font-size: 0.875rem;';
+        discussionBtn.addEventListener('click', () => {
+            if (discussionPanel.style.display === 'none' || discussionPanel.style.display === '') {
+                showDiscussionPanel();
+            } else {
+                hideDiscussionPanel();
+            }
+        });
+        document.body.appendChild(discussionBtn);

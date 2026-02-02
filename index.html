@@ -77,6 +77,8 @@
         .word-cloud { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: center; }
         .word-item { color: #1e293b; font-weight: 800; white-space: nowrap; letter-spacing: 0.01em; line-height: 1; display: inline-block; transition: transform 0.15s ease, color 0.15s; }
         .word-item:hover { transform: translateY(-2px) rotate(0deg); color: #0f172a; }
+        .pill { border: 1px solid #e2e8f0; background: #fff; color: #0f172a; padding: 6px 12px; border-radius: 999px; cursor: pointer; font-weight: 700; font-size: 13px; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08); }
+        .pill.active { background: #0f172a; color: #f8fafc; border-color: #0f172a; }
         .heatmap { display: grid; grid-template-columns: 72px repeat(24, minmax(10px, 1fr)); grid-template-rows: 36px repeat(7, minmax(14px, 1fr)); gap: 4px; background: #ffffff; padding: 12px; border-radius: 14px; border: 1px solid #e5e7eb; box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16); }
         .heat-label { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #0f172a; }
         .heat-axis { color: #475569; font-weight: 700; }
@@ -122,6 +124,11 @@
             <h2>☁️ Topic Word Cloud</h2>
             <p>Size reflects discussion frequency across topics. Larger words = more replies and mentions.</p>
             <div class="card light word-card">
+                <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+                    <span style="color:var(--text-secondary);font-size:14px;">Source</span>
+                    <button class="pill" data-cloud="topics">Topics</button>
+                    <button class="pill" data-cloud="titles">Titles</button>
+                </div>
                 <div class="word-cloud" id="wordCloud"></div>
             </div>
         </div>
@@ -148,14 +155,15 @@
     <script>
     async function loadData(){
         try {
-            const [summary, wordCloud, heatmap, network] = await Promise.all([
+            const [summary, wordCloud, titleCloud, heatmap, network] = await Promise.all([
                 fetch('data/summary_stats.json').then(r=>r.json()).catch(()=>({})),
                 fetch('data/word_cloud_data.json').then(r=>r.json()).catch(()=>[]),
+                fetch('data/title_word_cloud.json').then(r=>r.json()).catch(()=>[]),
                 fetch('data/heatmap_data.json').then(r=>r.json()).catch(()=>[]),
                 fetch('data/network_data.json').then(r=>r.json()).catch(()=>({nodes:[],links:[]}))
             ]);
             renderStats(summary);
-            renderWordCloud(wordCloud);
+            initWordCloud(wordCloud, titleCloud);
             renderHeatmap(heatmap);
             renderNetwork(network);
             updateTime(summary.crawled_at);
@@ -170,16 +178,24 @@
         document.getElementById('statEngagement').textContent = f(s.total_engagement);
     }
 
-    function renderWordCloud(data){
+    function initWordCloud(topicData, titleData){
         const wrap = document.getElementById('wordCloud');
-        if(!data || !data.length){ wrap.innerHTML = '<div style="color: var(--text-secondary)">No data</div>'; return; }
-        const palette = ['#440154','#46327e','#365c8d','#277f8e','#1fa187','#4ac16d','#a0da39','#f6e832'];
-        wrap.innerHTML = data.map(d=>{
-            const fontSize = Math.max(14, Math.min(62, d.size || d.value || 16));
-            const tilt = (Math.random()*18 - 9).toFixed(1);
-            const color = palette[Math.floor(Math.random()*palette.length)];
-            return `<span class="word-item" style="font-size:${fontSize}px;color:${color};transform:rotate(${tilt}deg);" title="${d.value} mentions">${d.text}</span>`;
-        }).join(' ');
+        const buttons = Array.from(document.querySelectorAll('[data-cloud]'));
+        const sets = { topics: topicData || [], titles: titleData || [] };
+        const render = (key)=>{
+            const data = sets[key] || [];
+            if(!data.length){ wrap.innerHTML = '<div style="color: var(--text-secondary)">No data</div>'; return; }
+            const palette = ['#440154','#46327e','#365c8d','#277f8e','#1fa187','#4ac16d','#a0da39','#f6e832'];
+            wrap.innerHTML = data.map(d=>{
+                const fontSize = Math.max(14, Math.min(62, d.size || d.value || 16));
+                const tilt = (Math.random()*18 - 9).toFixed(1);
+                const color = palette[Math.floor(Math.random()*palette.length)];
+                return `<span class="word-item" style="font-size:${fontSize}px;color:${color};transform:rotate(${tilt}deg);" title="${d.value} mentions">${d.text}</span>`;
+            }).join(' ');
+            buttons.forEach(btn=>btn.classList.toggle('active', btn.dataset.cloud===key));
+        };
+        buttons.forEach(btn=>btn.addEventListener('click', ()=>render(btn.dataset.cloud)));
+        render('topics');
     }
 
     function renderHeatmap(data){

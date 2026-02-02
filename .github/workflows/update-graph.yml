@@ -30,7 +30,7 @@ jobs:
           docker run -d \
             --name neo4j \
             -p 7474:7474 -p 7687:7687 \
-            -e "NEO4J_AUTH=neo4j/${NEO4J_PASS}" \
+            -e NEO4J_AUTH="neo4j/${NEO4J_PASS}" \
             -e NEO4J_PLUGINS='["apoc"]' \
             neo4j:latest
           
@@ -52,7 +52,7 @@ jobs:
           python3 scripts/crawl_moltbook.py \
             --neo-uri bolt://localhost:7687 \
             --neo-user neo4j \
-            --neo-password "${NEO4J_PASS}" \
+            --neo-password "$NEO4J_PASS" \
             --max-posts 500
             
       - name: Generate visualizations
@@ -62,7 +62,7 @@ jobs:
           python3 scripts/generate_visualizations.py \
             --neo-uri bolt://localhost:7687 \
             --neo-user neo4j \
-            --neo-password "${NEO4J_PASS}" \
+            --neo-password "$NEO4J_PASS" \
             --output-dir . \
             --max-agents 200 \
             --min-engagement 0
@@ -70,7 +70,7 @@ jobs:
           python3 scripts/generate_interactive_data.py \
             --neo-uri bolt://localhost:7687 \
             --neo-user neo4j \
-            --neo-password "${NEO4J_PASS}" \
+            --neo-password "$NEO4J_PASS" \
             --output-dir . \
             --max-agents 200
             

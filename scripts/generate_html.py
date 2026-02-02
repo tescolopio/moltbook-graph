@@ -1,4 +1,15 @@
-<!DOCTYPE html>
+#!/usr/bin/env python3
+"""
+Generate HTML Dashboard for Moltbook Knowledge Graph
+
+Creates an interactive HTML page with live-updating visualizations.
+"""
+
+import argparse
+import os
+from datetime import datetime
+
+HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -9,13 +20,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        * {
+        * {{
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
+        }}
         
-        :root {
+        :root {{
             --bg-primary: #0a0a0f;
             --bg-secondary: #13131a;
             --bg-card: #1a1a24;
@@ -27,9 +38,9 @@
             --border: #2a2a35;
             --success: #00ff88;
             --warning: #ffaa00;
-        }
+        }}
         
-        body {
+        body {{
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
@@ -38,9 +49,9 @@
             background-image: 
                 radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(0, 255, 136, 0.08) 0%, transparent 50%);
-        }
+        }}
         
-        .header-bar {
+        .header-bar {{
             background: var(--bg-card);
             border-bottom: 1px solid var(--border);
             padding: 1rem 2rem;
@@ -51,28 +62,28 @@
             position: sticky;
             top: 0;
             z-index: 100;
-        }
+        }}
         
-        .logo {
+        .logo {{
             display: flex;
             align-items: center;
             gap: 0.75rem;
-        }
+        }}
         
-        .logo-icon {
+        .logo-icon {{
             font-size: 1.75rem;
-        }
+        }}
         
-        .logo-text {
+        .logo-text {{
             font-size: 1.25rem;
             font-weight: 700;
             background: linear-gradient(135deg, var(--accent), var(--success));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
+        }}
         
-        .status-badge {
+        .status-badge {{
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -82,33 +93,33 @@
             border-radius: 20px;
             font-size: 0.875rem;
             font-weight: 500;
-        }
+        }}
         
-        .status-dot {
+        .status-dot {{
             width: 8px;
             height: 8px;
             background: var(--success);
             border-radius: 50%;
             animation: pulse 2s infinite;
-        }
+        }}
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.1); }
-        }
+        @keyframes pulse {{
+            0%, 100% {{ opacity: 1; transform: scale(1); }}
+            50% {{ opacity: 0.6; transform: scale(1.1); }}
+        }}
         
-        .container {
+        .container {{
             max-width: 1600px;
             margin: 0 auto;
             padding: 2rem;
-        }
+        }}
         
-        .hero {
+        .hero {{
             text-align: center;
             padding: 3rem 0 2rem;
-        }
+        }}
         
-        .hero h1 {
+        .hero h1 {{
             font-size: 3rem;
             font-weight: 800;
             margin-bottom: 1rem;
@@ -117,16 +128,16 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             line-height: 1.2;
-        }
+        }}
         
-        .hero-subtitle {
+        .hero-subtitle {{
             font-size: 1.125rem;
             color: var(--text-secondary);
             max-width: 600px;
             margin: 0 auto 1rem;
-        }
+        }}
         
-        .update-info {
+        .update-info {{
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
@@ -137,131 +148,131 @@
             font-size: 0.875rem;
             font-family: 'JetBrains Mono', monospace;
             color: var(--text-dim);
-        }
+        }}
         
-        .stats {
+        .stats {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
             margin: 2rem 0;
-        }
+        }}
         
-        .stat-card {
+        .stat-card {{
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
             transition: all 0.3s ease;
-        }
+        }}
         
-        .stat-card:hover {
+        .stat-card:hover {{
             border-color: var(--accent);
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
-        }
+        }}
         
-        .stat-label {
+        .stat-label {{
             font-size: 0.875rem;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
             font-weight: 600;
-        }
+        }}
         
-        .stat-value {
+        .stat-value {{
             font-size: 2.5rem;
             font-weight: 800;
             color: var(--accent);
             font-family: 'JetBrains Mono', monospace;
-        }
+        }}
         
-        .stat-subtext {
+        .stat-subtext {{
             font-size: 0.75rem;
             color: var(--text-dim);
             margin-top: 0.25rem;
-        }
+        }}
         
-        .section-title {
+        .section-title {{
             font-size: 1.5rem;
             font-weight: 700;
             margin: 3rem 0 1.5rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
-        }
+        }}
         
-        .section-title::before {
+        .section-title::before {{
             content: '';
             width: 4px;
             height: 24px;
             background: linear-gradient(180deg, var(--accent), var(--success));
             border-radius: 2px;
-        }
+        }}
         
-        .viz-grid {
+        .viz-grid {{
             display: grid;
             gap: 2rem;
             margin-bottom: 2rem;
-        }
+        }}
         
-        .viz-card {
+        .viz-card {{
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
             transition: border-color 0.3s ease;
-        }
+        }}
         
-        .viz-card:hover {
+        .viz-card:hover {{
             border-color: var(--accent-dim);
-        }
+        }}
         
-        .viz-card h3 {
+        .viz-card h3 {{
             font-size: 1.25rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
             color: var(--text-primary);
-        }
+        }}
         
-        .viz-card p {
+        .viz-card p {{
             font-size: 0.875rem;
             color: var(--text-secondary);
             margin-bottom: 1.5rem;
             line-height: 1.6;
-        }
+        }}
         
-        .viz-card img {
+        .viz-card img {{
             width: 100%;
             border-radius: 8px;
             border: 1px solid var(--border);
             display: block;
-        }
+        }}
         
-        .network-card {
+        .network-card {{
             grid-column: 1 / -1;
-        }
+        }}
         
-        .footer {
+        .footer {{
             text-align: center;
             padding: 3rem 2rem 2rem;
             color: var(--text-dim);
             font-size: 0.875rem;
             border-top: 1px solid var(--border);
             margin-top: 3rem;
-        }
+        }}
         
-        .footer a {
+        .footer a {{
             color: var(--accent);
             text-decoration: none;
             transition: color 0.2s;
-        }
+        }}
         
-        .footer a:hover {
+        .footer a:hover {{
             color: var(--success);
-        }
+        }}
         
-        .badge {
+        .badge {{
             display: inline-block;
             padding: 0.25rem 0.75rem;
             background: rgba(0, 212, 255, 0.1);
@@ -273,22 +284,22 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-left: 0.5rem;
-        }
+        }}
         
-        @media (max-width: 768px) {
-            .hero h1 {
+        @media (max-width: 768px) {{
+            .hero h1 {{
                 font-size: 2rem;
-            }
+            }}
             
-            .stats {
+            .stats {{
                 grid-template-columns: 1fr;
-            }
+            }}
             
-            .header-bar {
+            .header-bar {{
                 flex-direction: column;
                 gap: 1rem;
-            }
-        }
+            }}
+        }}
     </style>
 </head>
 <body>
@@ -314,26 +325,26 @@
             </p>
             <div class="update-info">
                 <span>⚡</span>
-                <span>Last updated: 2026-02-01 19:13:13</span>
+                <span>Last updated: {last_update_full}</span>
                 <span>•</span>
-                <span>Just now</span>
+                <span>{updated}</span>
             </div>
         </div>
         
         <div class="stats">
             <div class="stat-card">
                 <div class="stat-label">Topics Tracked</div>
-                <div class="stat-value">19</div>
+                <div class="stat-value">{topics}</div>
                 <div class="stat-subtext">Active discussion threads</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">AI Agents</div>
-                <div class="stat-value">468</div>
-                <div class="stat-subtext">Total discovered (top 200 shown)</div>
+                <div class="stat-value">{agents}</div>
+                <div class="stat-subtext">Total discovered (top {displayed} shown)</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Connections</div>
-                <div class="stat-value">1000</div>
+                <div class="stat-value">{connections}</div>
                 <div class="stat-subtext">Interaction mappings</div>
             </div>
             <div class="stat-card">
@@ -348,13 +359,13 @@
             <div class="viz-card">
                 <h3>📊 Topic Word Cloud</h3>
                 <p>Size indicates discussion frequency across all posts. Larger words represent more actively discussed topics in the ecosystem.</p>
-                <img src="topics_wordcloud.png?t=1769991249" alt="Topic Word Cloud" loading="lazy">
+                <img src="topics_wordcloud.png?t={timestamp}" alt="Topic Word Cloud" loading="lazy">
             </div>
             
             <div class="viz-card">
                 <h3>🔥 Engagement Heat Map</h3>
                 <p>Bubble size shows total engagement, color indicates submolt diversity. Reveals which topics drive the most interaction.</p>
-                <img src="topics_heatmap.png?t=1769991249" alt="Topic Heat Map" loading="lazy">
+                <img src="topics_heatmap.png?t={timestamp}" alt="Topic Heat Map" loading="lazy">
             </div>
         </div>
         
@@ -367,7 +378,7 @@
                     Edge width shows connection strength through shared topics. 
                     Visualizing the social fabric of AI agent discourse.
                 </p>
-                <img src="agent_network.png?t=1769991249" alt="Agent Network" loading="lazy">
+                <img src="agent_network.png?t={timestamp}" alt="Agent Network" loading="lazy">
             </div>
         </div>
         
@@ -385,4 +396,88 @@
         </div>
     </div>
 </body>
-</html>
+</html>"""
+
+
+def read_metadata(output_dir):
+    """Read metadata from last_update.txt"""
+    metadata_file = os.path.join(output_dir, 'last_update.txt')
+    metadata = {
+        'topics': '?',
+        'agents': '?',
+        'displayed': '?',
+        'connections': '?',
+        'last_updated': 'Unknown'
+    }
+    
+    if os.path.exists(metadata_file):
+        with open(metadata_file, 'r') as f:
+            for line in f:
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    key = key.strip().lower().replace(' ', '_')
+                    metadata[key] = value.strip()
+    
+    return metadata
+
+
+def generate_html_dashboard(output_dir='/mnt/d/moltbook-graph'):
+    """Generate the HTML dashboard with current data"""
+    
+    # Read metadata
+    metadata = read_metadata(output_dir)
+    
+    # Calculate time ago from last update
+    last_update_str = metadata.get('last_updated', 'Unknown')
+    try:
+        last_update_dt = datetime.strptime(last_update_str, '%Y-%m-%d %H:%M:%S')
+        time_ago = datetime.now() - last_update_dt
+        minutes_ago = int(time_ago.total_seconds() / 60)
+        
+        if minutes_ago < 1:
+            updated = "Just now"
+        elif minutes_ago == 1:
+            updated = "1 min ago"
+        elif minutes_ago < 60:
+            updated = f"{minutes_ago} mins ago"
+        else:
+            hours_ago = minutes_ago // 60
+            updated = f"{hours_ago}h ago"
+    except:
+        updated = "Unknown"
+    
+    # Generate timestamp for cache busting
+    timestamp = int(datetime.now().timestamp())
+    
+    # Fill in the template
+    html_content = HTML_TEMPLATE.format(
+        topics=metadata.get('topics', '?'),
+        agents=metadata.get('agents', '?'),
+        displayed=metadata.get('displayed', '?'),
+        connections=metadata.get('connections', '?'),
+        last_update_full=last_update_str,
+        updated=updated,
+        timestamp=timestamp
+    )
+    
+    # Write HTML file
+    output_file = os.path.join(output_dir, 'index.html')
+    with open(output_file, 'w') as f:
+        f.write(html_content)
+    
+    print(f"✅ Dashboard generated: {output_file}")
+    print(f"   Topics: {metadata.get('topics')}, Agents: {metadata.get('agents')}, Connections: {metadata.get('connections')}")
+    print(f"   Last updated: {last_update_str} ({updated})")
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Generate Moltbook Knowledge Graph HTML Dashboard')
+    parser.add_argument('--output-dir', default='/mnt/d/moltbook-graph',
+                       help='Output directory for HTML file (default: /mnt/d/moltbook-graph)')
+    
+    args = parser.parse_args()
+    generate_html_dashboard(args.output_dir)
+
+
+if __name__ == '__main__':
+    main()

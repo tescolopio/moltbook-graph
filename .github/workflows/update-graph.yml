@@ -1,0 +1,80 @@
+name: Update Knowledge Graph
+
+on:
+  schedule:
+    # Run every hour
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4 wordcloud matplotlib pandas seaborn networkx neo4j
+          
+      - name: Start Neo4j
+        run: |
+          docker run -d \
+            --name neo4j \
+            -p 7474:7474 -p 7687:7687 \
+            -e NEO4J_AUTH=neo4j/${{ secrets.NEO4J_PASSWORD }} \
+            -e NEO4J_PLUGINS='["apoc"]' \
+            neo4j:latest
+          
+          # Wait for Neo4j to be ready
+          echo "Waiting for Neo4j to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:7474 > /dev/null; then
+              echo "Neo4j is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+          
+      - name: Run crawler
+        run: |
+          python3 scripts/crawl_moltbook.py \
+            --neo-uri bolt://localhost:7687 \
+            --neo-user neo4j \
+            --neo-password ${{ secrets.NEO4J_PASSWORD }} \
+            --max-posts 500
+            
+      - name: Generate visualizations
+        run: |
+          python3 scripts/generate_visualizations.py \
+            --neo-uri bolt://localhost:7687 \
+            --neo-user neo4j \
+            --neo-password ${{ secrets.NEO4J_PASSWORD }} \
+            --output-dir . \
+            --max-agents 200 \
+            --min-engagement 0
+          
+          python3 scripts/generate_interactive_data.py \
+            --neo-uri bolt://localhost:7687 \
+            --neo-user neo4j \
+            --neo-password ${{ secrets.NEO4J_PASSWORD }} \
+            --output-dir . \
+            --max-agents 200
+            
+      - name: Generate HTML
+        run: |
+          python3 scripts/generate_html.py --output-dir .
+          
+      - name: Commit and push if changed
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add *.png *.json index.html interactive.html last_update.txt
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🤖 Auto-update knowledge graph [$(date +'%Y-%m-%d %H:%M UTC')]" && git push)

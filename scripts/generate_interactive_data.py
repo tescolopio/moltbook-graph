@@ -17,65 +17,62 @@ class InteractiveDataGenerator:
     
     def get_network_data(self, max_agents=200):
         """Get network data formatted for D3.js force-directed graph"""
-        query = """
-        // Get top agents by importance
+        # First query: get top agents
+        agent_query = """
         MATCH (a:Agent)-[:CREATED]->(content)
         OPTIONAL MATCH (content)-[:DISCUSSES]->(t:Topic)
         WITH a,
              count(DISTINCT content) as posts,
              sum(content.score) as total_engagement,
              count(DISTINCT t) as topics_discussed
-        WITH a, total_engagement, topics_discussed,
+        WITH a.name as name, total_engagement, topics_discussed,
              (total_engagement * LOG(1 + topics_discussed)) as importance_score
         ORDER BY importance_score DESC
         LIMIT $max_agents
-        WITH COLLECT(a.name) as top_agents, COLLECT({
-            name: a.name,
-            engagement: total_engagement,
-            topics: topics_discussed,
-            importance: importance_score
-        }) as agent_data
-        
-        // Get connections between top agents
-        UNWIND agent_data as agent
-        MATCH (a1:Agent {name: agent.name})-[:CREATED]->(content)-[:DISCUSSES]->(t:Topic)<-[:DISCUSSES]-(content2)<-[:CREATED]-(a2:Agent)
-        WHERE a1.name <> a2.name AND a2.name IN top_agents
-        WITH agent_data, a1.name as source, a2.name as target, 
-             COUNT(DISTINCT t) as shared_topics,
-             SUM(content.score + content2.score) as strength
-        
-        RETURN agent_data, 
-               COLLECT({source: source, target: target, value: shared_topics, strength: strength}) as links
+        RETURN name, total_engagement as engagement, topics_discussed as topics, importance_score as importance
         """
         
         with self.driver.session() as session:
-            result = session.run(query, max_agents=max_agents)
-            record = result.single()
-            
-            if not record:
-                return {"nodes": [], "links": []}
-            
+            result = session.run(agent_query, max_agents=max_agents)
             nodes = [
                 {
-                    "id": node["name"],
-                    "engagement": int(node["engagement"]),
-                    "topics": int(node["topics"]),
-                    "importance": float(node["importance"])
+                    "id": record["name"],
+                    "engagement": int(record["engagement"] or 0),
+                    "topics": int(record["topics"] or 0),
+                    "importance": float(record["importance"] or 0)
                 }
-                for node in record["agent_data"]
+                for record in result
             ]
             
+            if not nodes:
+                return {"nodes": [], "links": []}
+            
+            top_agent_names = [n["id"] for n in nodes]
+        
+        # Second query: get connections - much simpler approach
+        # Find agents that posted to same topics
+        link_query = """
+        MATCH (a1:Agent)-[:CREATED]->()-[:DISCUSSES]->(t:Topic)<-[:DISCUSSES]-()<-[:CREATED]-(a2:Agent)
+        WHERE a1.name IN $agents AND a2.name IN $agents AND a1.name < a2.name
+        WITH a1.name as source, a2.name as target, count(DISTINCT t) as value
+        WHERE value > 0
+        RETURN source, target, value
+        ORDER BY value DESC
+        LIMIT 1500
+        """
+        
+        with self.driver.session() as session:
+            result = session.run(link_query, agents=top_agent_names)
             links = [
                 {
-                    "source": link["source"],
-                    "target": link["target"],
-                    "value": int(link["value"]),
-                    "strength": int(link["strength"])
+                    "source": record["source"],
+                    "target": record["target"],
+                    "value": int(record["value"])
                 }
-                for link in record["links"]
+                for record in result
             ]
-            
-            return {"nodes": nodes, "links": links}
+        
+        return {"nodes": nodes, "links": links}
     
     def get_topic_data(self):
         """Get topic data with engagement metrics"""

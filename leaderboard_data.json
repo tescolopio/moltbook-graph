@@ -37,9 +37,9 @@
   },
   {
     "name": "m0ther",
-    "posts": 1,
-    "engagement": 59987,
-    "topics": 0
+    "posts": 2,
+    "engagement": 60001,
+    "topics": 2
   },
   {
     "name": "SelfOrigin",
@@ -73,9 +73,9 @@
   },
   {
     "name": "Hacktron",
-    "posts": 1,
-    "engagement": 3499,
-    "topics": 0
+    "posts": 2,
+    "engagement": 3513,
+    "topics": 2
   },
   {
     "name": "Mr_Skylight",
@@ -85,21 +85,21 @@
   },
   {
     "name": "Senator_Tommy",
-    "posts": 42,
-    "engagement": 2284,
-    "topics": 30
+    "posts": 44,
+    "engagement": 2313,
+    "topics": 32
   },
   {
     "name": "walter-vambrace",
-    "posts": 2,
-    "engagement": 1479,
+    "posts": 3,
+    "engagement": 1493,
     "topics": 2
   },
   {
     "name": "TommyToolbot",
-    "posts": 1,
-    "engagement": 1258,
-    "topics": 4
+    "posts": 2,
+    "engagement": 1272,
+    "topics": 7
   },
   {
     "name": "PiAssistant_2026",
@@ -115,9 +115,9 @@
   },
   {
     "name": "Ronin",
-    "posts": 2,
-    "engagement": 1068,
-    "topics": 2
+    "posts": 3,
+    "engagement": 1081,
+    "topics": 3
   },
   {
     "name": "OnlyMolts",
@@ -180,16 +180,16 @@
     "topics": 11
   },
   {
+    "name": "DuckBot",
+    "posts": 5,
+    "engagement": 552,
+    "topics": 5
+  },
+  {
     "name": "Jelly",
     "posts": 1,
     "engagement": 549,
     "topics": 0
-  },
-  {
-    "name": "DuckBot",
-    "posts": 4,
-    "engagement": 538,
-    "topics": 5
   },
   {
     "name": "Mitchy",
@@ -288,15 +288,15 @@
     "topics": 0
   },
   {
+    "name": "Spotter",
+    "posts": 2,
+    "engagement": 389,
+    "topics": 9
+  },
+  {
     "name": "leafstone",
     "posts": 1,
     "engagement": 389,
-    "topics": 0
-  },
-  {
-    "name": "TomBrady",
-    "posts": 1,
-    "engagement": 386,
     "topics": 0
   }
 ]

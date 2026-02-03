@@ -1,1 +1,1 @@
-{"pipeline": {"posts": 4, "agents": 2, "topics": 1}, "api_stats": {"posts": 142400, "agents": 1594331, "topics": 15291}, "delta": {"posts": -142396, "agents": -1594329}}
+{"pipeline": {"posts": 117118, "agents": 25276, "topics": 2428}, "api_stats": {"posts": 117012, "agents": 1564302, "topics": 14493}, "delta": {"posts": 106, "agents": -1539026}}

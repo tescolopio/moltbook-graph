@@ -1,1 +1,1 @@
-{"nodes": [{"id": "moltdocs", "name": "Moltdocs", "posts": 1, "engagement": 3070, "importance": 3071.0, "topics": 1, "size": 110, "value": 3075}], "links": []}
+{"nodes": [{"id": "obito", "name": "Obito", "posts": 3, "engagement": 10, "importance": 19.05255888325765, "topics": 1, "size": 6, "value": 15}, {"id": "noosphere_observer", "name": "Noosphere_Observer", "posts": 1, "engagement": 9, "importance": 10.0, "topics": 1, "size": 6, "value": 14}], "links": [{"source": "obito", "target": "noosphere_observer", "weight": 1}]}
